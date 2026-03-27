@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 TOKEN_RE = re.compile(r"\[\[([a-zA-Z0-9_.-]+)\]\]")
+INCLUDE_RE = re.compile(r"\[\[include:([a-zA-Z0-9_/.-]+)\]\]")
 
 
 def parse_args() -> argparse.Namespace:
@@ -31,6 +32,11 @@ def parse_args() -> argparse.Namespace:
         "--version-file",
         default="VERSION",
         help="Path to plain-text version file injected as [[blueprint.version]].",
+    )
+    parser.add_argument(
+        "--includes-dir",
+        default="includes",
+        help="Directory with reusable YAML snippet files for [[include:...]] directives.",
     )
     return parser.parse_args()
 
@@ -74,6 +80,41 @@ def build_version_line(template_value: str, version: str, lang: str) -> str:
         ) from exc
 
 
+def resolve_includes(template: str, includes_dir: Path) -> str:
+    """Replace ``[[include:path]]`` tokens with the content of the referenced file.
+
+    Indentation is preserved: subsequent lines of the included content are
+    indented to match the column where the ``[[include:...]]`` token appeared.
+    """
+    if not INCLUDE_RE.search(template):
+        return template
+
+    errors: list[str] = []
+
+    def repl(match: re.Match[str]) -> str:
+        rel_path = match.group(1)
+        include_path = includes_dir / rel_path
+        if not include_path.exists():
+            errors.append(str(include_path))
+            return match.group(0)
+
+        content = include_path.read_text(encoding="utf-8").rstrip("\n")
+        if "\n" not in content:
+            return content
+
+        line_start = template.rfind("\n", 0, match.start()) + 1
+        indent = " " * (match.start() - line_start)
+        lines = content.splitlines()
+        return lines[0] + "\n" + "\n".join(indent + line for line in lines[1:])
+
+    rendered = INCLUDE_RE.sub(repl, template)
+    if errors:
+        raise SystemExit(
+            "Include file(s) not found: " + ", ".join(sorted(set(errors)))
+        )
+    return rendered
+
+
 def render_template(template: str, values: dict[str, str]) -> str:
     errors: list[str] = []
 
@@ -108,6 +149,7 @@ def main() -> int:
     i18n_dir = Path(args.i18n_dir)
     output_dir = Path(args.output_dir)
     version_file = Path(args.version_file)
+    includes_dir = Path(args.includes_dir)
 
     if not template_path.exists():
         raise SystemExit(f"Template not found: {template_path}")
@@ -115,6 +157,11 @@ def main() -> int:
         raise SystemExit(f"i18n directory not found: {i18n_dir}")
 
     template = template_path.read_text(encoding="utf-8")
+
+    # Resolve [[include:...]] directives before i18n processing
+    if includes_dir.is_dir():
+        template = resolve_includes(template, includes_dir)
+
     template_keys = set(TOKEN_RE.findall(template))
     if not template_keys:
         raise SystemExit("No placeholders found in template.")

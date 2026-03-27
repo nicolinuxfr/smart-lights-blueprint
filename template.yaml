@@ -250,7 +250,6 @@ max_exceeded: silent
 
 trigger_variables:
   control_var: !input control_entities
-  tick_light_entities: !input lights
   switch_entities_var: !input switches
   switch_event_type_var: !input switch_event_type
 
@@ -275,24 +274,35 @@ variables:
   b_day: !input brightness_day
   k_night: !input kelvin_night
   k_day: !input kelvin_day
-  light_entities: "{{ lights.entity_id | default([]) }}"
+  lights: !input lights
   expanded_light_entities: >
-    {% if light_entities is string %}
-      {{ [light_entities] }}
-    {% elif light_entities is iterable %}
-      {{ light_entities | list }}
-    {% else %}
-      {{ [] }}
+    {% set target = lights %}
+    {% set ns = namespace(entities=[]) %}
+    {% if target.entity_id is defined %}
+      {% set ids = [target.entity_id] if target.entity_id is string else target.entity_id %}
+      {% set ns.entities = ns.entities + ids %}
     {% endif %}
+    {% if target.area_id is defined %}
+      {% set areas = [target.area_id] if target.area_id is string else target.area_id %}
+      {% for a in areas %}
+        {% set ns.entities = ns.entities + (area_entities(a) | select('match', 'light\\.') | list) %}
+      {% endfor %}
+    {% endif %}
+    {% if target.device_id is defined %}
+      {% set devices = [target.device_id] if target.device_id is string else target.device_id %}
+      {% for d in devices %}
+        {% set ns.entities = ns.entities + (device_entities(d) | select('match', 'light\\.') | list) %}
+      {% endfor %}
+    {% endif %}
+    {{ ns.entities | unique | list }}
   weather_entity_id: !input weather_entity
   night_mode_entity_id: !input night_mode_entity
   nm_brightness: !input night_mode_brightness
   nm_kelvin: !input night_mode_kelvin
-  lights: !input lights
 
 trigger:
   # ===== AUTO ON/OFF TRIGGERS =====
-  - platform: state
+  - trigger: state
     entity_id: !input sensors
     to: "on"
     not_from:
@@ -300,7 +310,7 @@ trigger:
       - "unknown"
     id: sensor_on
 
-  - platform: state
+  - trigger: state
     entity_id: !input sensors
     to: "off"
     not_from:
@@ -308,48 +318,38 @@ trigger:
       - "unknown"
     id: sensor_off
 
-  - platform: state
+  - trigger: state
     entity_id: !input sensors
     from: "unavailable"
     to: "off"
     id: ha_start
 
-  - platform: state
+  - trigger: state
     entity_id: !input sensors
     from: "unknown"
     to: "off"
     id: ha_start
 
-  - platform: template
+  - trigger: template
     value_template: >-
       {{ control_var not in (none, [], '') and
          expand(control_var) | rejectattr('state', 'eq', 'on') | list | count == 0 }}
     id: control_on
 
-  - platform: template
+  - trigger: template
     value_template: >-
       {{ control_var not in (none, [], '') and
          expand(control_var) | selectattr('state', 'eq', 'off') | list | count > 0 }}
     id: control_off
 
-  - platform: state
+  - trigger: state
     entity_id: !input switches
     id: switch_toggled
 
   # ===== ADAPTIVE LIGHTING TRIGGERS =====
-  - trigger: template
-    alias: Tick while lights on
-    value_template: >
-      {% set target = tick_light_entities %}
-      {% set entity_list = target.entity_id | default([]) %}
-      {% set entities = [entity_list] if entity_list is string else entity_list %}
-      {{ (now().minute % 5 == 0)
-         and (
-           expand(entities)
-           | selectattr('state', 'eq', 'on')
-           | list
-           | count
-         ) > 0 }}
+  - trigger: time_pattern
+    alias: Tick every 5 minutes
+    minutes: "/5"
     id: tick
 
   - trigger: event
@@ -433,80 +433,12 @@ action:
                 value_template: "{{ enable_adaptive }}"
             then:
               - variables:
-                  adaptive_values: >
-                    {% set now_ts = as_timestamp(now()) %}
-                    {% set next_rising_ts = as_timestamp(state_attr('sun.sun', 'next_rising')) %}
-                    {% set next_setting_ts = as_timestamp(state_attr('sun.sun', 'next_setting')) %}
-                    {% set day_offset_s = 2700 %}
-                    {% set nr = next_rising_ts | float(0) %}
-                    {% set ns = next_setting_ts | float(0) %}
-                    {% set sunrise_ts = (nr - (86400 if nr > ns else 0)) - day_offset_s %}
-                    {% set sunset_ts = ns + day_offset_s %}
-                    {% set sr0 = sunrise_ts %}
-                    {% set ss0 = sunset_ts %}
-                    {% set t = now_ts | float(0) %}
-                    {% set sr_prev = sr0 - 86400 %}
-                    {% set ss_prev = ss0 - 86400 %}
-                    {% if t >= sr0 and t < ss0 %}
-                      {% set d = (t - sr0) / (ss0 - sr0) %}
-                      {% set d = [0, [d, 1] | min] | max %}
-                      {% set p = 1 - ((2 * d - 1) ** 2) %}
-                    {% elif t >= sr_prev and t < ss_prev %}
-                      {% set d = (t - sr_prev) / (ss_prev - sr_prev) %}
-                      {% set d = [0, [d, 1] | min] | max %}
-                      {% set p = 1 - ((2 * d - 1) ** 2) %}
-                    {% elif t < sr0 %}
-                      {% set n = (t - ss_prev) / (sr0 - ss_prev) %}
-                      {% set n = [0, [n, 1] | min] | max %}
-                      {% set p = -(1 - ((2 * n - 1) ** 2)) %}
-                    {% else %}
-                      {% set n = (t - ss0) / (sr0 + 86400 - ss0) %}
-                      {% set n = [0, [n, 1] | min] | max %}
-                      {% set p = -(1 - ((2 * n - 1) ** 2)) %}
-                    {% endif %}
-                    {% if p > 0 %}
-                      {% set weather_condition = '' %}
-                      {% if weather_entity_id not in ['', none] %}
-                        {% set weather_condition = states(weather_entity_id) | lower %}
-                      {% endif %}
-                      {% set weather_factor = 0 %}
-                      {% if weather_condition not in ['', 'unknown', 'unavailable', 'none'] %}
-                        {% if weather_condition in ['sunny', 'clear-night'] %}{% set weather_factor = 0.0 %}
-                        {% elif weather_condition == 'partlycloudy' %}{% set weather_factor = 0.35 %}
-                        {% elif weather_condition == 'windy' %}{% set weather_factor = 0.45 %}
-                        {% elif weather_condition in ['windy-variant', 'cloudy'] %}{% set weather_factor = 0.55 %}
-                        {% elif weather_condition == 'snowy' %}{% set weather_factor = 0.6 %}
-                        {% elif weather_condition in ['snowy-rainy', 'hail'] %}{% set weather_factor = 0.65 %}
-                        {% elif weather_condition == 'fog' %}{% set weather_factor = 0.75 %}
-                        {% elif weather_condition == 'rainy' %}{% set weather_factor = 0.8 %}
-                        {% elif weather_condition == 'pouring' %}{% set weather_factor = 0.85 %}
-                        {% elif weather_condition in ['lightning', 'lightning-rainy'] %}{% set weather_factor = 0.9 %}
-                        {% elif weather_condition == 'exceptional' %}{% set weather_factor = 0.95 %}
-                        {% endif %}
-                      {% endif %}
-                      {% set gamma = 1.2 + (weather_factor * 0.25) %}
-                      {% set gamma = [0.8, [gamma, 2.2] | min] | max %}
-                      {% set s0 = p * p * p * ((p * ((6 * p) - 15)) + 10) %}
-                      {% set f = s0 ** gamma %}
-                    {% else %}
-                      {% set f = 0 %}
-                      {% set weather_factor = 0 %}
-                    {% endif %}
-                    {% set night_active = night_mode_entity_id not in ['', none] and is_state(night_mode_entity_id, 'on') %}
-                    {% set b_min = [b_night | float(1), b_day | float(100)] | min %}
-                    {% set b_max = [b_night | float(1), b_day | float(100)] | max %}
-                    {% set k_min = [k_night | float(2200), k_day | float(5000)] | min %}
-                    {% set k_max = [k_night | float(2200), k_day | float(5000)] | max %}
-                    {% set brightness = nm_brightness | int(20) if night_active else (b_min + (b_max - b_min) * f) | round(0) | int %}
-                    {% set kelvin_base = (k_min + (k_max - k_min) * f) %}
-                    {% set kelvin_offset = ((0.5 - weather_factor) * 900) %}
-                    {% set kelvin = nm_kelvin | int(2200) if night_active else [k_min, [kelvin_base + kelvin_offset, k_max] | min] | max | round(0) | int %}
-                    {{ {'brightness': brightness, 'kelvin': kelvin} }}
+                  [[include:adaptive_variables.yaml]]
               - action: light.turn_on
                 target: !input lights
                 data:
-                  brightness_pct: "{{ (adaptive_values.brightness | default(100)) | int }}"
-                  color_temp_kelvin: "{{ (adaptive_values.kelvin | default(4000)) | int }}"
+                  brightness_pct: "{{ effective_brightness | int(0) }}"
+                  color_temp_kelvin: "{{ effective_kelvin | int(0) }}"
                   transition: 1
             else:
               - action: light.turn_on
@@ -525,7 +457,7 @@ action:
               - ha_start
         sequence:
           - wait_for_trigger:
-              - platform: state
+              - trigger: state
                 entity_id: !input sensors
                 to: "on"
                 not_from:
@@ -600,80 +532,12 @@ action:
                     value_template: "{{ enable_adaptive }}"
                 then:
                   - variables:
-                      adaptive_values: >
-                        {% set now_ts = as_timestamp(now()) %}
-                        {% set next_rising_ts = as_timestamp(state_attr('sun.sun', 'next_rising')) %}
-                        {% set next_setting_ts = as_timestamp(state_attr('sun.sun', 'next_setting')) %}
-                        {% set day_offset_s = 2700 %}
-                        {% set nr = next_rising_ts | float(0) %}
-                        {% set ns = next_setting_ts | float(0) %}
-                        {% set sunrise_ts = (nr - (86400 if nr > ns else 0)) - day_offset_s %}
-                        {% set sunset_ts = ns + day_offset_s %}
-                        {% set sr0 = sunrise_ts %}
-                        {% set ss0 = sunset_ts %}
-                        {% set t = now_ts | float(0) %}
-                        {% set sr_prev = sr0 - 86400 %}
-                        {% set ss_prev = ss0 - 86400 %}
-                        {% if t >= sr0 and t < ss0 %}
-                          {% set d = (t - sr0) / (ss0 - sr0) %}
-                          {% set d = [0, [d, 1] | min] | max %}
-                          {% set p = 1 - ((2 * d - 1) ** 2) %}
-                        {% elif t >= sr_prev and t < ss_prev %}
-                          {% set d = (t - sr_prev) / (ss_prev - sr_prev) %}
-                          {% set d = [0, [d, 1] | min] | max %}
-                          {% set p = 1 - ((2 * d - 1) ** 2) %}
-                        {% elif t < sr0 %}
-                          {% set n = (t - ss_prev) / (sr0 - ss_prev) %}
-                          {% set n = [0, [n, 1] | min] | max %}
-                          {% set p = -(1 - ((2 * n - 1) ** 2)) %}
-                        {% else %}
-                          {% set n = (t - ss0) / (sr0 + 86400 - ss0) %}
-                          {% set n = [0, [n, 1] | min] | max %}
-                          {% set p = -(1 - ((2 * n - 1) ** 2)) %}
-                        {% endif %}
-                        {% if p > 0 %}
-                          {% set weather_condition = '' %}
-                          {% if weather_entity_id not in ['', none] %}
-                            {% set weather_condition = states(weather_entity_id) | lower %}
-                          {% endif %}
-                          {% set weather_factor = 0 %}
-                          {% if weather_condition not in ['', 'unknown', 'unavailable', 'none'] %}
-                            {% if weather_condition in ['sunny', 'clear-night'] %}{% set weather_factor = 0.0 %}
-                            {% elif weather_condition == 'partlycloudy' %}{% set weather_factor = 0.35 %}
-                            {% elif weather_condition == 'windy' %}{% set weather_factor = 0.45 %}
-                            {% elif weather_condition in ['windy-variant', 'cloudy'] %}{% set weather_factor = 0.55 %}
-                            {% elif weather_condition == 'snowy' %}{% set weather_factor = 0.6 %}
-                            {% elif weather_condition in ['snowy-rainy', 'hail'] %}{% set weather_factor = 0.65 %}
-                            {% elif weather_condition == 'fog' %}{% set weather_factor = 0.75 %}
-                            {% elif weather_condition == 'rainy' %}{% set weather_factor = 0.8 %}
-                            {% elif weather_condition == 'pouring' %}{% set weather_factor = 0.85 %}
-                            {% elif weather_condition in ['lightning', 'lightning-rainy'] %}{% set weather_factor = 0.9 %}
-                            {% elif weather_condition == 'exceptional' %}{% set weather_factor = 0.95 %}
-                            {% endif %}
-                          {% endif %}
-                          {% set gamma = 1.2 + (weather_factor * 0.25) %}
-                          {% set gamma = [0.8, [gamma, 2.2] | min] | max %}
-                          {% set s0 = p * p * p * ((p * ((6 * p) - 15)) + 10) %}
-                          {% set f = s0 ** gamma %}
-                        {% else %}
-                          {% set f = 0 %}
-                          {% set weather_factor = 0 %}
-                        {% endif %}
-                        {% set night_active = night_mode_entity_id not in ['', none] and is_state(night_mode_entity_id, 'on') %}
-                        {% set b_min = [b_night | float(1), b_day | float(100)] | min %}
-                        {% set b_max = [b_night | float(1), b_day | float(100)] | max %}
-                        {% set k_min = [k_night | float(2200), k_day | float(5000)] | min %}
-                        {% set k_max = [k_night | float(2200), k_day | float(5000)] | max %}
-                        {% set brightness = nm_brightness | int(20) if night_active else (b_min + (b_max - b_min) * f) | round(0) | int %}
-                        {% set kelvin_base = (k_min + (k_max - k_min) * f) %}
-                        {% set kelvin_offset = ((0.5 - weather_factor) * 900) %}
-                        {% set kelvin = nm_kelvin | int(2200) if night_active else [k_min, [kelvin_base + kelvin_offset, k_max] | min] | max | round(0) | int %}
-                        {{ {'brightness': brightness, 'kelvin': kelvin} }}
+                      [[include:adaptive_variables.yaml]]
                   - action: light.turn_on
                     target: !input lights
                     data:
-                      brightness_pct: "{{ (adaptive_values.brightness | default(100)) | int }}"
-                      color_temp_kelvin: "{{ (adaptive_values.kelvin | default(4000)) | int }}"
+                      brightness_pct: "{{ effective_brightness | int(0) }}"
+                      color_temp_kelvin: "{{ effective_kelvin | int(0) }}"
                       transition: 1
                 else:
                   - action: light.turn_on
@@ -748,158 +612,12 @@ action:
           - delay:
               milliseconds: 200
           - variables:
-              now_ts: "{{ as_timestamp(now()) }}"
-              next_rising_ts: "{{ as_timestamp(state_attr('sun.sun', 'next_rising')) }}"
-              next_setting_ts: "{{ as_timestamp(state_attr('sun.sun', 'next_setting')) }}"
-              day_offset_s: 2700
-              sunrise_ts: >
-                {% set nr = next_rising_ts | float(0) %}
-                {% set ns = next_setting_ts | float(0) %}
-                {{ (nr - (86400 if nr > ns else 0)) - day_offset_s }}
-              sunset_ts: "{{ (next_setting_ts | float(0)) + day_offset_s }}"
-              previous_sunrise_ts: "{{ (sunrise_ts | float(0)) - 86400 }}"
-              previous_sunset_ts: "{{ (sunset_ts | float(0)) - 86400 }}"
-              weather_condition_state: >
-                {% if weather_entity_id not in ['', none] %}
-                  {{ states(weather_entity_id) | lower }}
-                {% else %}
-                  {{ '' }}
-                {% endif %}
-              weather_factor: >
-                {% set c = weather_condition_state | lower %}
-                {% if c in ['', 'unknown', 'unavailable', 'none'] %}
-                  0
-                {% elif c in ['sunny', 'clear-night'] %}
-                  0.0
-                {% elif c == 'partlycloudy' %}
-                  0.35
-                {% elif c == 'windy' %}
-                  0.45
-                {% elif c in ['windy-variant', 'cloudy'] %}
-                  0.55
-                {% elif c == 'snowy' %}
-                  0.6
-                {% elif c in ['snowy-rainy', 'hail'] %}
-                  0.65
-                {% elif c == 'fog' %}
-                  0.75
-                {% elif c == 'rainy' %}
-                  0.8
-                {% elif c == 'pouring' %}
-                  0.85
-                {% elif c in ['lightning', 'lightning-rainy'] %}
-                  0.9
-                {% elif c == 'exceptional' %}
-                  0.95
-                {% else %}
-                  0.0
-                {% endif %}
-              effective_brightness_curve_gamma: >
-                {% set base = 1.2 %}
-                {% set w = weather_factor | float(0) %}
-                {{ [0.8, [base + (w * 0.25), 2.2] | min] | max }}
-              sun_position: >
-                {% set t = now_ts | float(0) %}
-                {% set sr0 = sunrise_ts | float(0) %}
-                {% set ss0 = sunset_ts | float(0) %}
-                {% set sr_prev = previous_sunrise_ts | float(0) %}
-                {% set ss_prev = previous_sunset_ts | float(0) %}
-                {% if t >= sr0 and t < ss0 %}
-                  {% set d = (t - sr0) / (ss0 - sr0) %}
-                  {% set d = [0, [d, 1] | min] | max %}
-                  {{ (1 - ((2 * d - 1) ** 2)) | float(0) }}
-                {% elif t >= sr_prev and t < ss_prev %}
-                  {% set d = (t - sr_prev) / (ss_prev - sr_prev) %}
-                  {% set d = [0, [d, 1] | min] | max %}
-                  {{ (1 - ((2 * d - 1) ** 2)) | float(0) }}
-                {% elif t < sr0 %}
-                  {% set n = (t - ss_prev) / (sr0 - ss_prev) %}
-                  {% set n = [0, [n, 1] | min] | max %}
-                  {{ (-(1 - ((2 * n - 1) ** 2))) | float(0) }}
-                {% else %}
-                  {% set n = (t - ss0) / (sr0 + 86400 - ss0) %}
-                  {% set n = [0, [n, 1] | min] | max %}
-                  {{ (-(1 - ((2 * n - 1) ** 2))) | float(0) }}
-                {% endif %}
-              adaptive_curve_factor: >
-                {% set p = sun_position | float(0) %}
-                {% if p > 0 %}
-                  {% set s0 = p * p * p * ((p * ((6 * p) - 15)) + 10) %}
-                  {{ s0 ** (effective_brightness_curve_gamma | float(1.2)) }}
-                {% else %}
-                  0
-                {% endif %}
-              weather_kelvin_offset: "{{ ((0.5 - (weather_factor | float(0))) * 900) }}"
-              target_brightness: >
-                {% set b_min = [b_night | float(1), b_day | float(100)] | min %}
-                {% set b_max = [b_night | float(1), b_day | float(100)] | max %}
-                {{ (b_min + (b_max - b_min) * (adaptive_curve_factor | float(0))) | round(0) | int }}
-              target_kelvin: >
-                {% set k_min = [k_night | float(2200), k_day | float(5000)] | min %}
-                {% set k_max = [k_night | float(2200), k_day | float(5000)] | max %}
-                {% set base = (k_min + (k_max - k_min) * (adaptive_curve_factor | float(0))) %}
-                {% set adjusted = base + (weather_kelvin_offset | float(0)) %}
-                {{ [k_min, [adjusted, k_max] | min] | max | round(0) | int }}
-              night_mode_active: >
-                {{ night_mode_entity_id not in ['', none]
-                   and is_state(night_mode_entity_id, 'on') }}
-              effective_brightness: >
-                {{ nm_brightness | int(20) if night_mode_active else target_brightness | int(0) }}
-              effective_kelvin: >
-                {{ nm_kelvin | int(2200) if night_mode_active else target_kelvin | int(0) }}
-              light_to_update: "{{ trigger.event.data.entity_id }}"
+              [[include:adaptive_variables.yaml]]
+              current_light: "{{ trigger.event.data.entity_id }}"
           - variables:
-              modes: "{{ state_attr(light_to_update, 'supported_color_modes') or [] }}"
-              min_k: "{{ state_attr(light_to_update, 'min_color_temp_kelvin') | float(0) }}"
-              max_k: "{{ state_attr(light_to_update, 'max_color_temp_kelvin') | float(0) }}"
-              has_brightness_attr: "{{ state_attr(light_to_update, 'brightness') is not none }}"
-              has_ct_attr: "{{ state_attr(light_to_update, 'color_temp') is not none or state_attr(light_to_update, 'color_temp_kelvin') is not none }}"
-              onoff_only: "{{ (modes | count == 1) and (modes[0] == 'onoff') }}"
-              supports_ct: >
-                {{ 'color_temp' in modes or (min_k > 0 and max_k > 0) or has_ct_attr }}
-              supports_brightness: >
-                {{ has_brightness_attr or (modes | count == 0) or not onoff_only }}
-              clamped_kelvin: >
-                {% if min_k > 0 and max_k > 0 %}
-                  {{ [min_k, [effective_kelvin | float(0), max_k] | min] | max | round(0) | int }}
-                {% else %}
-                  {{ effective_kelvin | int(0) }}
-                {% endif %}
+              [[include:light_capability_variables.yaml]]
           - choose:
-              - conditions:
-                  - condition: template
-                    value_template: "{{ supports_brightness and supports_ct }}"
-                sequence:
-                  - action: light.turn_on
-                    continue_on_error: true
-                    target:
-                      entity_id: "{{ light_to_update }}"
-                    data:
-                      transition: 1
-                      brightness_pct: "{{ effective_brightness | int(0) }}"
-                      color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
-              - conditions:
-                  - condition: template
-                    value_template: "{{ supports_brightness }}"
-                sequence:
-                  - action: light.turn_on
-                    continue_on_error: true
-                    target:
-                      entity_id: "{{ light_to_update }}"
-                    data:
-                      transition: 1
-                      brightness_pct: "{{ effective_brightness | int(0) }}"
-              - conditions:
-                  - condition: template
-                    value_template: "{{ supports_ct }}"
-                sequence:
-                  - action: light.turn_on
-                    continue_on_error: true
-                    target:
-                      entity_id: "{{ light_to_update }}"
-                    data:
-                      transition: 1
-                      color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+              [[include:light_update_choose.yaml]]
 
       # =========================================================
       #  ADAPTIVE: PERIODIC UPDATE & SOLAR EVENTS
@@ -948,168 +666,24 @@ action:
           - condition: template
             value_template: "{{ on_lights | count > 0 }}"
           - variables:
-              now_ts: "{{ as_timestamp(now()) }}"
-              next_rising_ts: "{{ as_timestamp(state_attr('sun.sun', 'next_rising')) }}"
-              next_setting_ts: "{{ as_timestamp(state_attr('sun.sun', 'next_setting')) }}"
-              day_offset_s: 2700
-              sunrise_ts: >
-                {% set nr = next_rising_ts | float(0) %}
-                {% set ns = next_setting_ts | float(0) %}
-                {{ (nr - (86400 if nr > ns else 0)) - day_offset_s }}
-              sunset_ts: "{{ (next_setting_ts | float(0)) + day_offset_s }}"
-              previous_sunrise_ts: "{{ (sunrise_ts | float(0)) - 86400 }}"
-              previous_sunset_ts: "{{ (sunset_ts | float(0)) - 86400 }}"
-              weather_condition_state: >
-                {% if weather_entity_id not in ['', none] %}
-                  {{ states(weather_entity_id) | lower }}
-                {% else %}
-                  {{ '' }}
-                {% endif %}
-              weather_factor: >
-                {% set c = weather_condition_state | lower %}
-                {% if c in ['', 'unknown', 'unavailable', 'none'] %}
-                  0
-                {% elif c in ['sunny', 'clear-night'] %}
-                  0.0
-                {% elif c == 'partlycloudy' %}
-                  0.35
-                {% elif c == 'windy' %}
-                  0.45
-                {% elif c in ['windy-variant', 'cloudy'] %}
-                  0.55
-                {% elif c == 'snowy' %}
-                  0.6
-                {% elif c in ['snowy-rainy', 'hail'] %}
-                  0.65
-                {% elif c == 'fog' %}
-                  0.75
-                {% elif c == 'rainy' %}
-                  0.8
-                {% elif c == 'pouring' %}
-                  0.85
-                {% elif c in ['lightning', 'lightning-rainy'] %}
-                  0.9
-                {% elif c == 'exceptional' %}
-                  0.95
-                {% else %}
-                  0.0
-                {% endif %}
-              effective_brightness_curve_gamma: >
-                {% set base = 1.2 %}
-                {% set w = weather_factor | float(0) %}
-                {{ [0.8, [base + (w * 0.25), 2.2] | min] | max }}
-              daylight_progress: >
-                {% set t = now_ts | float(0) %}
-                {% set sr0 = sunrise_ts | float(0) %}
-                {% set ss0 = sunset_ts | float(0) %}
-                {% set sr_prev = previous_sunrise_ts | float(0) %}
-                {% set ss_prev = previous_sunset_ts | float(0) %}
-                {% if t >= sr0 and t < ss0 %}
-                  {% set d = (t - sr0) / (ss0 - sr0) %}
-                  {{ [0, [d, 1] | min] | max }}
-                {% elif t >= sr_prev and t < ss_prev %}
-                  {% set d = (t - sr_prev) / (ss_prev - sr_prev) %}
-                  {{ [0, [d, 1] | min] | max }}
-                {% else %}
-                  {{ none }}
-                {% endif %}
-              sun_position: >
-                {% set t = now_ts | float(0) %}
-                {% set sr0 = sunrise_ts | float(0) %}
-                {% set ss0 = sunset_ts | float(0) %}
-                {% set sr_prev = previous_sunrise_ts | float(0) %}
-                {% set ss_prev = previous_sunset_ts | float(0) %}
-                {% if t >= sr0 and t < ss0 %}
-                  {% set d = (t - sr0) / (ss0 - sr0) %}
-                  {% set d = [0, [d, 1] | min] | max %}
-                  {{ (1 - ((2 * d - 1) ** 2)) | float(0) }}
-                {% elif t >= sr_prev and t < ss_prev %}
-                  {% set d = (t - sr_prev) / (ss_prev - sr_prev) %}
-                  {% set d = [0, [d, 1] | min] | max %}
-                  {{ (1 - ((2 * d - 1) ** 2)) | float(0) }}
-                {% elif t < sr0 %}
-                  {% set n = (t - ss_prev) / (sr0 - ss_prev) %}
-                  {% set n = [0, [n, 1] | min] | max %}
-                  {{ (-(1 - ((2 * n - 1) ** 2))) | float(0) }}
-                {% else %}
-                  {% set n = (t - ss0) / (sr0 + 86400 - ss0) %}
-                  {% set n = [0, [n, 1] | min] | max %}
-                  {{ (-(1 - ((2 * n - 1) ** 2))) | float(0) }}
-                {% endif %}
-              adaptive_curve_factor: >
-                {% set p = sun_position | float(0) %}
-                {% if p > 0 %}
-                  {% set s0 = p * p * p * ((p * ((6 * p) - 15)) + 10) %}
-                  {% set single = (expanded_light_entities | count) == 1 %}
-                  {% set base_curve = s0 ** (effective_brightness_curve_gamma | float(1.2)) %}
-                  {% if single and daylight_progress not in [none, 'none', ''] %}
-                    {% set day_ratio = daylight_progress | float(0) %}
-                    {% if day_ratio < 0.5 %}
-                      {{ base_curve ** 0.78 }}
-                    {% else %}
-                      {{ base_curve ** 0.62 }}
-                    {% endif %}
-                  {% else %}
-                    {{ base_curve }}
-                  {% endif %}
-                {% else %}
-                  0
-                {% endif %}
-              weather_kelvin_offset: "{{ ((0.5 - (weather_factor | float(0))) * 900) }}"
-              target_brightness: >
-                {% set b_min = [b_night | float(1), b_day | float(100)] | min %}
-                {% set b_max = [b_night | float(1), b_day | float(100)] | max %}
-                {{ (b_min + (b_max - b_min) * (adaptive_curve_factor | float(0))) | round(0) | int }}
-              target_kelvin: >
-                {% set k_min = [k_night | float(2200), k_day | float(5000)] | min %}
-                {% set k_max = [k_night | float(2200), k_day | float(5000)] | max %}
-                {% set base = (k_min + (k_max - k_min) * (adaptive_curve_factor | float(0))) %}
-                {% set adjusted = base + (weather_kelvin_offset | float(0)) %}
-                {{ [k_min, [adjusted, k_max] | min] | max | round(0) | int }}
-              night_mode_active: >
-                {{ night_mode_entity_id not in ['', none]
-                   and is_state(night_mode_entity_id, 'on') }}
-              effective_brightness: >
-                {{ nm_brightness | int(20) if night_mode_active else target_brightness | int(0) }}
-              effective_kelvin: >
-                {{ nm_kelvin | int(2200) if night_mode_active else target_kelvin | int(0) }}
+              [[include:adaptive_variables.yaml]]
           - repeat:
               for_each: "{{ on_lights }}"
               sequence:
                 - variables:
-                    modes: "{{ state_attr(repeat.item, 'supported_color_modes') or [] }}"
-                    modes_count: "{{ modes | count }}"
-                    min_k: "{{ state_attr(repeat.item, 'min_color_temp_kelvin') | float(0) }}"
-                    max_k: "{{ state_attr(repeat.item, 'max_color_temp_kelvin') | float(0) }}"
+                    current_light: "{{ repeat.item }}"
+                - variables:
+                    [[include:light_capability_variables.yaml]]
                     tick_updates_brightness: "{{ trigger.id == 'tick' and ((now_ts | int(0) // 300) % 2 == 0) }}"
                     recently_turned_on: >
-                      {% set last_changed_ts = as_timestamp(states[repeat.item].last_changed) | float(0) %}
-                      {{ is_state(repeat.item, 'on') and ((now_ts | float(0)) - last_changed_ts) < 20 }}
-                    has_brightness_attr: "{{ state_attr(repeat.item, 'brightness') is not none }}"
-                    has_ct_kelvin_attr: "{{ state_attr(repeat.item, 'color_temp_kelvin') is not none }}"
-                    has_ct_attr: "{{ state_attr(repeat.item, 'color_temp') is not none }}"
-                    onoff_only: "{{ (modes_count == 1) and (modes[0] == 'onoff') }}"
-                    supports_ct: >
-                      {{ 'color_temp' in modes
-                         or (min_k > 0 and max_k > 0)
-                         or has_ct_kelvin_attr
-                         or has_ct_attr }}
-                    supports_brightness: >
-                      {{ has_brightness_attr
-                         or (modes_count == 0)
-                         or not onoff_only }}
+                      {% set last_changed_ts = as_timestamp(states[current_light].last_changed) | float(0) %}
+                      {{ is_state(current_light, 'on') and ((now_ts | float(0)) - last_changed_ts) < 20 }}
                     current_brightness_pct: >
-                      {% set b = state_attr(repeat.item, 'brightness') %}
+                      {% set b = state_attr(current_light, 'brightness') %}
                       {% if b is not none %}
                         {{ [1, [((b | float(0)) / 2.55) | round(0) | int, 100] | min] | max }}
                       {% else %}
                         {{ effective_brightness | int(0) }}
-                      {% endif %}
-                    clamped_kelvin: >
-                      {% if min_k > 0 and max_k > 0 %}
-                        {{ [min_k, [effective_kelvin | float(0), max_k] | min] | max | round(0) | int }}
-                      {% else %}
-                        {{ effective_kelvin | int(0) }}
                       {% endif %}
                 - choose:
                     - conditions:
@@ -1123,7 +697,7 @@ action:
                         - action: light.turn_on
                           continue_on_error: true
                           target:
-                            entity_id: "{{ repeat.item }}"
+                            entity_id: "{{ current_light }}"
                           data:
                             transition: 15
                             brightness_pct: "{{ effective_brightness | int(0) }}"
@@ -1140,7 +714,7 @@ action:
                         - action: light.turn_on
                           continue_on_error: true
                           target:
-                            entity_id: "{{ repeat.item }}"
+                            entity_id: "{{ current_light }}"
                           data:
                             transition: 15
                             brightness_pct: "{{ effective_brightness | int(0) }}"
@@ -1156,49 +730,16 @@ action:
                         - action: light.turn_on
                           continue_on_error: true
                           target:
-                            entity_id: "{{ repeat.item }}"
+                            entity_id: "{{ current_light }}"
                           data:
                             transition: 15
                             brightness_pct: "{{ effective_brightness | int(0) if night_mode_active else current_brightness_pct | int(0) }}"
                             color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
-                    - conditions:
-                        - condition: template
-                          value_template: "{{ supports_brightness and supports_ct }}"
-                      sequence:
-                        - action: light.turn_on
-                          continue_on_error: true
-                          target:
-                            entity_id: "{{ repeat.item }}"
-                          data:
-                            transition: 1
-                            brightness_pct: "{{ effective_brightness | int(0) }}"
-                            color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
-                    - conditions:
-                        - condition: template
-                          value_template: "{{ supports_brightness }}"
-                      sequence:
-                        - action: light.turn_on
-                          continue_on_error: true
-                          target:
-                            entity_id: "{{ repeat.item }}"
-                          data:
-                            transition: 1
-                            brightness_pct: "{{ effective_brightness | int(0) }}"
-                    - conditions:
-                        - condition: template
-                          value_template: "{{ supports_ct }}"
-                      sequence:
-                        - action: light.turn_on
-                          continue_on_error: true
-                          target:
-                            entity_id: "{{ repeat.item }}"
-                          data:
-                            transition: 1
-                            color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                    [[include:light_update_choose.yaml]]
                   default:
                     - action: light.turn_on
                       continue_on_error: true
                       target:
-                        entity_id: "{{ repeat.item }}"
+                        entity_id: "{{ current_light }}"
                       data:
                         transition: 1
