@@ -52,7 +52,14 @@ blueprint:
               filter:
                 - integration: zha
                 - integration: mqtt
-                - integration: matter
+              multiple: true
+        switch_event_entities:
+          name: "[[input.switch_event_entities.name]]"
+          description: "[[input.switch_event_entities.description]]"
+          default: []
+          selector:
+            entity:
+              domain: event
               multiple: true
         switch_action:
           name: "[[input.switch_action.name]]"
@@ -253,17 +260,6 @@ max_exceeded: silent
 
 trigger_variables:
   control_var: !input control_entities
-  switch_devices_var: !input switch_devices
-  switch_event_entities_var: >
-    {% set ns = namespace(entities=[]) %}
-    {% for d in switch_devices_var %}
-      {% for e in device_entities(d) %}
-        {% if e.startswith('event.') %}
-          {% set ns.entities = ns.entities + [e] %}
-        {% endif %}
-      {% endfor %}
-    {% endfor %}
-    {{ ns.entities }}
 
 variables:
   # Feature flags
@@ -273,6 +269,7 @@ variables:
   control_entities: !input control_entities
   sensors: !input sensors
   switch_devices: !input switch_devices
+  switch_event_entities: !input switch_event_entities
   switch_action: !input switch_action
   switch_device_names: >
     {% set ns = namespace(names=[]) %}
@@ -361,7 +358,7 @@ trigger:
     id: control_off
 
   - trigger: state
-    entity_id: "{{ switch_event_entities_var }}"
+    entity_id: !input switch_event_entities
     id: switch_toggled
 
   - trigger: event
@@ -525,7 +522,7 @@ action:
           - condition: template
             value_template: >-
               {% if trigger.platform == 'state' %}
-                {% set match = trigger.entity_id in switch_event_entities_var %}
+                {% set match = trigger.entity_id in switch_event_entities %}
                 {% set action = trigger.to_state.state | default('') %}
               {% elif trigger.platform == 'event' %}
                 {% set match = trigger.event.data.device_id in switch_devices %}
