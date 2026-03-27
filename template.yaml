@@ -43,17 +43,20 @@ blueprint:
             entity:
               domain: binary_sensor
               multiple: true
-        switches:
-          name: "[[input.switches.name]]"
-          description: "[[input.switches.description]]"
+        switch_devices:
+          name: "[[input.switch_devices.name]]"
+          description: "[[input.switch_devices.description]]"
           default: []
           selector:
-            entity:
-              domain: event
+            device:
+              filter:
+                - integration: zha
+                - integration: mqtt
+                - integration: matter
               multiple: true
-        switch_event_type:
-          name: "[[input.switch_event_type.name]]"
-          description: "[[input.switch_event_type.description]]"
+        switch_action:
+          name: "[[input.switch_action.name]]"
+          description: "[[input.switch_action.description]]"
           default: ""
           selector:
             text:
@@ -250,8 +253,17 @@ max_exceeded: silent
 
 trigger_variables:
   control_var: !input control_entities
-  switch_entities_var: !input switches
-  switch_event_type_var: !input switch_event_type
+  switch_devices_var: !input switch_devices
+  switch_event_entities_var: >
+    {% set ns = namespace(entities=[]) %}
+    {% for d in switch_devices_var %}
+      {% for e in device_entities(d) %}
+        {% if e.startswith('event.') %}
+          {% set ns.entities = ns.entities + [e] %}
+        {% endif %}
+      {% endfor %}
+    {% endfor %}
+    {{ ns.entities }}
 
 variables:
   # Feature flags
@@ -260,8 +272,14 @@ variables:
   # Auto on/off variables
   control_entities: !input control_entities
   sensors: !input sensors
-  switches: !input switches
-  switch_event_type: !input switch_event_type
+  switch_devices: !input switch_devices
+  switch_action: !input switch_action
+  switch_device_names: >
+    {% set ns = namespace(names=[]) %}
+    {% for d in switch_devices %}
+      {% set ns.names = ns.names + [device_attr(d, 'name')] %}
+    {% endfor %}
+    {{ ns.names }}
   keep_on_open_doors: !input keep_on_open_doors
   light_sensors: !input light_sensors
   light_threshold: !input light_threshold
@@ -343,7 +361,15 @@ trigger:
     id: control_off
 
   - trigger: state
-    entity_id: !input switches
+    entity_id: "{{ switch_event_entities_var }}"
+    id: switch_toggled
+
+  - trigger: event
+    event_type: zha_event
+    id: switch_toggled
+
+  - trigger: mqtt
+    topic: "zigbee2mqtt/+/action"
     id: switch_toggled
 
   # ===== ADAPTIVE LIGHTING TRIGGERS =====
@@ -498,9 +524,22 @@ action:
               - switch_toggled
           - condition: template
             value_template: >-
-              {% set evt = switch_event_type %}
-              {{ evt in ('', none)
-                 or trigger.to_state.state == evt }}
+              {% if trigger.platform == 'state' %}
+                {% set match = trigger.entity_id in switch_event_entities_var %}
+                {% set action = trigger.to_state.state | default('') %}
+              {% elif trigger.platform == 'event' %}
+                {% set match = trigger.event.data.device_id in switch_devices %}
+                {% set action = trigger.event.data.command | default('') %}
+              {% elif trigger.platform == 'mqtt' %}
+                {% set device_name = trigger.topic.split('/')[1] %}
+                {% set match = device_name in switch_device_names %}
+                {% set action = trigger.payload | default('') %}
+              {% else %}
+                {% set match = false %}
+                {% set action = '' %}
+              {% endif %}
+              {% set evt = switch_action %}
+              {{ match and (evt in ('', none) or action == evt) }}
         sequence:
           - if:
               - condition: template
