@@ -1,6 +1,5 @@
 - conditions:
-    - condition: template
-      value_template: "{{ supports_brightness and supports_ct }}"
+    - "{{ supports_brightness and supports_ct }}"
   sequence:
     - action: light.turn_on
       continue_on_error: true
@@ -11,8 +10,7 @@
         brightness_pct: "{{ effective_brightness | int(0) }}"
         color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
 - conditions:
-    - condition: template
-      value_template: "{{ supports_brightness }}"
+    - "{{ supports_brightness }}"
   sequence:
     - action: light.turn_on
       continue_on_error: true
@@ -22,8 +20,7 @@
         transition: 1
         brightness_pct: "{{ effective_brightness | int(0) }}"
 - conditions:
-    - condition: template
-      value_template: "{{ supports_ct }}"
+    - "{{ supports_ct }}"
   sequence:
     - action: light.turn_on
       continue_on_error: true

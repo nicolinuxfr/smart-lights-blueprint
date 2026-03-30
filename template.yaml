@@ -43,30 +43,13 @@ blueprint:
             entity:
               domain: binary_sensor
               multiple: true
-        switch_devices:
-          name: "[[input.switch_devices.name]]"
-          description: "[[input.switch_devices.description]]"
-          default: []
-          selector:
-            device:
-              filter:
-                - integration: zha
-                - integration: mqtt
-              multiple: true
-        switch_event_entities:
-          name: "[[input.switch_event_entities.name]]"
-          description: "[[input.switch_event_entities.description]]"
-          default: []
-          selector:
-            entity:
-              domain: event
-              multiple: true
-        switch_action:
-          name: "[[input.switch_action.name]]"
-          description: "[[input.switch_action.description]]"
+        switch_entity:
+          name: "[[input.switch_entity.name]]"
+          description: "[[input.switch_entity.description]]"
           default: ""
           selector:
-            text:
+            entity:
+              domain: input_boolean
         off_delay:
           name: "[[input.off_delay.name]]"
           description: "[[input.off_delay.description]]"
@@ -268,15 +251,7 @@ variables:
   # Auto on/off variables
   control_entities: !input control_entities
   sensors: !input sensors
-  switch_devices: !input switch_devices
-  switch_event_entities: !input switch_event_entities
-  switch_action: !input switch_action
-  switch_device_names: >
-    {% set ns = namespace(names=[]) %}
-    {% for d in switch_devices %}
-      {% set ns.names = ns.names + [device_attr(d, 'name')] %}
-    {% endfor %}
-    {{ ns.names }}
+  switch_entity: !input switch_entity
   keep_on_open_doors: !input keep_on_open_doors
   light_sensors: !input light_sensors
   light_threshold: !input light_threshold
@@ -358,15 +333,13 @@ trigger:
     id: control_off
 
   - trigger: state
-    entity_id: !input switch_event_entities
-    id: switch_toggled
-
-  - trigger: event
-    event_type: zha_event
-    id: switch_toggled
-
-  - trigger: mqtt
-    topic: "zigbee2mqtt/+/action"
+    entity_id: !input switch_entity
+    not_from:
+      - "unavailable"
+      - "unknown"
+    not_to:
+      - "unavailable"
+      - "unknown"
     id: switch_toggled
 
   # ===== ADAPTIVE LIGHTING TRIGGERS =====
@@ -418,42 +391,36 @@ action:
   # =========================================================
   - choose:
       - conditions:
-          - condition: template
-            value_template: "{{ enable_auto_onoff }}"
+          - "{{ enable_auto_onoff }}"
           - condition: trigger
             id:
               - sensor_on
               - control_on
-          - condition: template
-            value_template: >-
-              {% if trigger.id == 'control_on' %}
-                {{ expand(sensors) | selectattr('state', 'eq', 'on') | list | count > 0 }}
-              {% else %}
-                {{ trigger.from_state.state not in ['unavailable', 'unknown'] }}
-              {% endif %}
-          - condition: template
-            value_template: >-
-              {{ control_entities in (none, [], '') or
-                 expand(control_entities) | rejectattr('state', 'eq', 'on') | list | count == 0 }}
-          - condition: template
-            value_template: >-
-              {{ trigger.id == 'control_on' or keep_on_open_doors or
-                 state_attr(trigger.entity_id, 'device_class') in ['motion', 'occupancy', 'presence'] }}
-          - condition: template
-            value_template: >-
-              {% set ls = light_sensors %}
-              {% set thr = light_threshold | float(0) %}
-              {% set has_night = night_only %}
-              {% set has_lux = ls not in (none, [], '') and thr > 0 %}
-              {% set night_ok = has_night and is_state('sun.sun', 'below_horizon') %}
-              {% set lux_ok = has_lux and
-                 (expand(ls) | map(attribute='state') | map('float', 0) | sum /
-                  [expand(ls) | list | count, 1] | max) < thr %}
-              {{ (not has_night and not has_lux) or night_ok or lux_ok }}
+          - >-
+            {% if trigger.id == 'control_on' %}
+              {{ expand(sensors) | selectattr('state', 'eq', 'on') | list | count > 0 }}
+            {% else %}
+              {{ trigger.from_state.state not in ['unavailable', 'unknown'] }}
+            {% endif %}
+          - >-
+            {{ control_entities in (none, [], '') or
+               expand(control_entities) | rejectattr('state', 'eq', 'on') | list | count == 0 }}
+          - >-
+            {{ trigger.id == 'control_on' or keep_on_open_doors or
+               state_attr(trigger.entity_id, 'device_class') in ['motion', 'occupancy', 'presence'] }}
+          - >-
+            {% set ls = light_sensors %}
+            {% set thr = light_threshold | float(0) %}
+            {% set has_night = night_only %}
+            {% set has_lux = ls not in (none, [], '') and thr > 0 %}
+            {% set night_ok = has_night and is_state('sun.sun', 'below_horizon') %}
+            {% set lux_ok = has_lux and
+               (expand(ls) | map(attribute='state') | map('float', 0) | sum /
+                [expand(ls) | list | count, 1] | max) < thr %}
+            {{ (not has_night and not has_lux) or night_ok or lux_ok }}
         sequence:
           - if:
-              - condition: template
-                value_template: "{{ enable_adaptive }}"
+              - "{{ enable_adaptive }}"
             then:
               - variables:
                   [[include:adaptive_variables.yaml]]
@@ -471,8 +438,7 @@ action:
       #  AUTO ON/OFF: TURN OFF (sensor_off, control_off, ha_start)
       # =========================================================
       - conditions:
-          - condition: template
-            value_template: "{{ enable_auto_onoff }}"
+          - "{{ enable_auto_onoff }}"
           - condition: trigger
             id:
               - sensor_off
@@ -488,15 +454,12 @@ action:
                   - "unknown"
             timeout: !input off_delay
             continue_on_timeout: true
-          - condition: template
-            value_template: "{{ wait.trigger is none }}"
-          - condition: template
-            value_template: >-
+          - condition: "{{ wait.trigger is none }}"
+          - condition: >-
               {{ trigger.id == 'control_off' or
                  control_entities in (none, [], '') or
                  expand(control_entities) | rejectattr('state', 'eq', 'on') | list | count == 0 }}
-          - condition: template
-            value_template: >-
+          - condition: >-
               {% if not keep_on_open_doors %}
                 {{ expand(sensors)
                    | selectattr('attributes.device_class', 'in', ['motion', 'occupancy', 'presence'])
@@ -511,32 +474,14 @@ action:
             target: !input lights
 
       # =========================================================
-      #  AUTO ON/OFF: SWITCH TOGGLE
+      #  AUTO ON/OFF: SWITCH TOGGLE (input_boolean)
       # =========================================================
       - conditions:
-          - condition: template
-            value_template: "{{ enable_auto_onoff }}"
+          - "{{ enable_auto_onoff }}"
           - condition: trigger
             id:
               - switch_toggled
-          - condition: template
-            value_template: >-
-              {% if trigger.platform == 'state' %}
-                {% set match = trigger.entity_id in switch_event_entities %}
-                {% set action = trigger.to_state.state | default('') %}
-              {% elif trigger.platform == 'event' %}
-                {% set match = trigger.event.data.device_id in switch_devices %}
-                {% set action = trigger.event.data.command | default('') %}
-              {% elif trigger.platform == 'mqtt' %}
-                {% set device_name = trigger.topic.split('/')[1] %}
-                {% set match = device_name in switch_device_names %}
-                {% set action = trigger.payload | default('') %}
-              {% else %}
-                {% set match = false %}
-                {% set action = '' %}
-              {% endif %}
-              {% set evt = switch_action %}
-              {{ match and (evt in ('', none) or action == evt) }}
+          - "{{ switch_entity not in ('', none) }}"
         sequence:
           - if:
               - condition: template
@@ -548,12 +493,10 @@ action:
               - action: light.turn_off
                 target: !input lights
             else:
-              - condition: template
-                value_template: >-
+              - condition: >-
                   {{ control_entities in (none, [], '') or
                      expand(control_entities) | rejectattr('state', 'eq', 'on') | list | count == 0 }}
-              - condition: template
-                value_template: >-
+              - condition: >-
                   {% set ls = light_sensors %}
                   {% set thr = light_threshold | float(0) %}
                   {% set has_night = night_only %}
@@ -564,8 +507,7 @@ action:
                       [expand(ls) | list | count, 1] | max) < thr %}
                   {{ (not has_night and not has_lux) or night_ok or lux_ok }}
               - if:
-                  - condition: template
-                    value_template: "{{ enable_adaptive }}"
+                  - "{{ enable_adaptive }}"
                 then:
                   - variables:
                       [[include:adaptive_variables.yaml]]
@@ -584,35 +526,32 @@ action:
       #  (color mode deactivation, restore on off)
       # =========================================================
       - conditions:
-          - condition: template
-            value_template: "{{ enable_adaptive }}"
+          - "{{ enable_adaptive }}"
           - condition: trigger
             id:
               - light_state_changed
-          - condition: template
-            value_template: >
-              {% set event = trigger.event.data if trigger.event is defined and trigger.event.data is defined else none %}
-              {{ event is not none
-                 and event.entity_id is defined
-                 and event.entity_id in expanded_light_entities }}
+          - >
+            {% set event = trigger.event.data if trigger.event is defined and trigger.event.data is defined else none %}
+            {{ event is not none
+               and event.entity_id is defined
+               and event.entity_id in expanded_light_entities }}
         sequence:
           # Disable adaptive on color mode
           - if:
-              - condition: template
-                value_template: >
-                  {% set event = trigger.event.data %}
-                  {{ disable_on_color
-                     and auto_mode_input_entity not in ['', none]
-                     and auto_mode_input_entity.startswith('input_boolean.')
-                     and event.new_state is not none
-                     and event.new_state.state == 'on'
-                     and event.new_state.attributes.color_mode is defined
-                     and event.new_state.attributes.color_mode not in ['color_temp', 'white']
-                     and (
-                       event.old_state is none
-                       or event.old_state.attributes.color_mode is not defined
-                       or event.old_state.attributes.color_mode != event.new_state.attributes.color_mode
-                     ) }}
+              - >
+                {% set event = trigger.event.data %}
+                {{ disable_on_color
+                   and auto_mode_input_entity not in ['', none]
+                   and auto_mode_input_entity.startswith('input_boolean.')
+                   and event.new_state is not none
+                   and event.new_state.state == 'on'
+                   and event.new_state.attributes.color_mode is defined
+                   and event.new_state.attributes.color_mode not in ['color_temp', 'white']
+                   and (
+                     event.old_state is none
+                     or event.old_state.attributes.color_mode is not defined
+                     or event.old_state.attributes.color_mode != event.new_state.attributes.color_mode
+                   ) }}
             then:
               - action: input_boolean.turn_off
                 target:
@@ -620,29 +559,26 @@ action:
               - stop: "Handled color mode change"
           # Restore control entity when all lights turn off
           - if:
-              - condition: template
-                value_template: >
-                  {% set event = trigger.event.data %}
-                  {{ restore_on_off
-                     and auto_mode_input_entity not in ['', none]
-                     and auto_mode_input_entity.startswith('input_boolean.')
-                     and event.new_state is not none
-                     and event.new_state.state == 'off'
-                     and (expand(expanded_light_entities) | selectattr('state', 'eq', 'on') | list | count) == 0 }}
+              - >
+                {% set event = trigger.event.data %}
+                {{ restore_on_off
+                   and auto_mode_input_entity not in ['', none]
+                   and auto_mode_input_entity.startswith('input_boolean.')
+                   and event.new_state is not none
+                   and event.new_state.state == 'off'
+                   and (expand(expanded_light_entities) | selectattr('state', 'eq', 'on') | list | count) == 0 }}
             then:
               - action: input_boolean.turn_on
                 target:
                   entity_id: "{{ auto_mode_input_entity }}"
               - stop: "Restored control entity after all lights turned off"
           # Apply adaptive values when a light turns on
-          - condition: template
-            value_template: >
+          - condition: >
               {% set event = trigger.event.data %}
               {{ event.new_state is not none
                  and event.new_state.state == 'on'
                  and (event.old_state is none or event.old_state.state != 'on') }}
-          - condition: template
-            value_template: >
+          - condition: >
               {{ auto_mode_input_entity in ['', none]
                  or is_state(auto_mode_input_entity, 'on') }}
           - delay:
@@ -661,8 +597,7 @@ action:
       #   automations_reload_service)
       # =========================================================
       - conditions:
-          - condition: template
-            value_template: "{{ enable_adaptive }}"
+          - "{{ enable_adaptive }}"
           - condition: trigger
             id:
               - tick
@@ -670,28 +605,26 @@ action:
               - auto_mode_enabled
               - night_mode_changed
               - automations_reload_service
-          - condition: template
-            value_template: >
-              {% if trigger.id == 'auto_mode_enabled' %}
-                {{ auto_mode_input_entity not in ['', none]
-                   and trigger.event is defined
-                   and trigger.event.data is defined
-                   and trigger.event.data.new_state is not none
-                   and trigger.event.data.new_state.state == 'on'
-                   and (trigger.event.data.old_state is none or trigger.event.data.old_state.state != 'on') }}
-              {% elif trigger.id == 'night_mode_changed' %}
-                {{ night_mode_entity_id not in ['', none]
-                   and trigger.event is defined
-                   and trigger.event.data is defined
-                   and trigger.event.data.new_state is not none
-                   and (trigger.event.data.old_state is none or trigger.event.data.old_state.state != trigger.event.data.new_state.state) }}
-              {% else %}
-                true
-              {% endif %}
-          - condition: template
-            value_template: >
-              {{ auto_mode_input_entity in ['', none]
-                 or is_state(auto_mode_input_entity, 'on') }}
+          - >
+            {% if trigger.id == 'auto_mode_enabled' %}
+              {{ auto_mode_input_entity not in ['', none]
+                 and trigger.event is defined
+                 and trigger.event.data is defined
+                 and trigger.event.data.new_state is not none
+                 and trigger.event.data.new_state.state == 'on'
+                 and (trigger.event.data.old_state is none or trigger.event.data.old_state.state != 'on') }}
+            {% elif trigger.id == 'night_mode_changed' %}
+              {{ night_mode_entity_id not in ['', none]
+                 and trigger.event is defined
+                 and trigger.event.data is defined
+                 and trigger.event.data.new_state is not none
+                 and (trigger.event.data.old_state is none or trigger.event.data.old_state.state != trigger.event.data.new_state.state) }}
+            {% else %}
+              true
+            {% endif %}
+          - >
+            {{ auto_mode_input_entity in ['', none]
+               or is_state(auto_mode_input_entity, 'on') }}
         sequence:
           - variables:
               on_lights: >
@@ -699,8 +632,7 @@ action:
                    | selectattr('state', 'eq', 'on')
                    | map(attribute='entity_id')
                    | list }}
-          - condition: template
-            value_template: "{{ on_lights | count > 0 }}"
+          - condition: "{{ on_lights | count > 0 }}"
           - variables:
               [[include:adaptive_variables.yaml]]
           - repeat:
@@ -723,12 +655,11 @@ action:
                       {% endif %}
                 - choose:
                     - conditions:
-                        - condition: template
-                          value_template: >
-                            {{ trigger.id == 'tick'
-                               and supports_brightness
-                               and supports_ct
-                               and recently_turned_on }}
+                        - >
+                          {{ trigger.id == 'tick'
+                             and supports_brightness
+                             and supports_ct
+                             and recently_turned_on }}
                       sequence:
                         - action: light.turn_on
                           continue_on_error: true
@@ -739,13 +670,12 @@ action:
                             brightness_pct: "{{ effective_brightness | int(0) }}"
                             color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
                     - conditions:
-                        - condition: template
-                          value_template: >
-                            {{ trigger.id == 'tick'
-                               and supports_brightness
-                               and supports_ct
-                               and not recently_turned_on
-                               and tick_updates_brightness }}
+                        - >
+                          {{ trigger.id == 'tick'
+                             and supports_brightness
+                             and supports_ct
+                             and not recently_turned_on
+                             and tick_updates_brightness }}
                       sequence:
                         - action: light.turn_on
                           continue_on_error: true
@@ -755,13 +685,12 @@ action:
                             transition: 15
                             brightness_pct: "{{ effective_brightness | int(0) }}"
                     - conditions:
-                        - condition: template
-                          value_template: >
-                            {{ trigger.id == 'tick'
-                               and supports_brightness
-                               and supports_ct
-                               and not recently_turned_on
-                               and not tick_updates_brightness }}
+                        - >
+                          {{ trigger.id == 'tick'
+                             and supports_brightness
+                             and supports_ct
+                             and not recently_turned_on
+                             and not tick_updates_brightness }}
                       sequence:
                         - action: light.turn_on
                           continue_on_error: true

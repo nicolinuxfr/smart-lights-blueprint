@@ -27,8 +27,7 @@ https://raw.githubusercontent.com/nicolinuxfr/smart-lights-blueprint/gh-pages/en
 | Input | Description | Default |
 |-------|-------------|---------|
 | **Sensors** | Binary sensors that trigger the lights (motion, door/window, etc.) | — |
-| **Switches** | Event entities (Zigbee buttons, smart switches) that toggle the lights | — |
-| **Switch event type** | Event type that triggers the toggle (e.g., "single_press") | Any |
+| **Switch** | An `input_boolean` used as a toggle for the lights, typically flipped by another automation | — |
 | **Turn off delay** | Time to wait before turning off the lights after a sensor becomes inactive | 00:02:00 |
 
 ### Auto on/off – Lighting conditions
@@ -79,12 +78,12 @@ https://raw.githubusercontent.com/nicolinuxfr/smart-lights-blueprint/gh-pages/en
 1. When any selected sensor becomes active (motion detected, door opened, etc.), the lights turn on.
 2. When all sensors become inactive, the blueprint waits for the configured delay before turning off the lights.
 3. If a sensor becomes active again during the delay, the timer resets and the lights stay on.
-4. Switches (Zigbee buttons, etc.) toggle the lights on/off. The event type filter lets you reserve other button actions for other automations.
+4. The optional **switch** input uses an `input_boolean` as a toggle for the lights. You can flip it from another automation, for example when a physical switch or button is pressed.
 5. By default, open door/window sensors do not prevent the lights from turning off — only motion/presence sensors are checked.
 
 #### Lighting conditions
 
-The lighting conditions only affect **turning on** the lights. Turning off always works regardless of sun or luminosity.
+The lighting conditions only affect **turning on** the lights, whether the trigger comes from sensors or from the optional switch. Turning off always works regardless of sun or luminosity.
 
 - **Night only**: lights turn on only when the sun is below the horizon, using the built-in Home Assistant `sun.sun` entity.
 - **Luminosity sensors + threshold**: lights turn on only when the average luminosity is below the threshold.

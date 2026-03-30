@@ -27,8 +27,7 @@ https://raw.githubusercontent.com/nicolinuxfr/smart-lights-blueprint/gh-pages/fr
 | Paramètre | Description | Défaut |
 |-----------|-------------|--------|
 | **Capteurs** | Capteurs binaires qui déclenchent les lumières (mouvement, ouverture de porte/fenêtre, etc.) | — |
-| **Interrupteurs** | Entités de type event (boutons Zigbee, interrupteurs connectés) qui basculent les lumières | — |
-| **Type d'appui** | Type d'événement qui déclenche le toggle (ex : « single_press ») | Tous |
+| **Interrupteur** | Un `input_boolean` utilisé comme toggle pour les lumières, généralement basculé par une autre automatisation | — |
 | **Délai d'extinction** | Temps à attendre avant d'éteindre les lumières après qu'un capteur est devenu inactif | 00:02:00 |
 
 ### Allumage auto – Conditions d'éclairage
@@ -79,12 +78,12 @@ https://raw.githubusercontent.com/nicolinuxfr/smart-lights-blueprint/gh-pages/fr
 1. Quand un capteur sélectionné devient actif (mouvement détecté, porte ouverte, etc.), les lumières s'allument.
 2. Quand tous les capteurs deviennent inactifs, le blueprint attend le délai configuré avant d'éteindre les lumières.
 3. Si un capteur redevient actif pendant le délai, le minuteur se réinitialise et les lumières restent allumées.
-4. Les interrupteurs (boutons Zigbee, etc.) basculent les lumières on/off. Le filtre par type d'appui permet de réserver d'autres actions pour d'autres automatisations.
+4. L'entrée **interrupteur** optionnelle utilise un `input_boolean` comme toggle pour les lumières. Vous pouvez le basculer depuis une autre automatisation, par exemple lors de l'appui sur un interrupteur ou bouton physique.
 5. Par défaut, les capteurs de porte/fenêtre restés ouverts n'empêchent pas l'extinction — seuls les capteurs de mouvement/présence sont vérifiés.
 
 #### Conditions d'éclairage
 
-Les conditions d'éclairage n'affectent que l'**allumage** des lumières. L'extinction fonctionne toujours, indépendamment du soleil ou de la luminosité.
+Les conditions d'éclairage n'affectent que l'**allumage** des lumières, que le déclenchement vienne des capteurs ou de l'interrupteur optionnel. L'extinction fonctionne toujours, indépendamment du soleil ou de la luminosité.
 
 - **Uniquement la nuit** : les lumières ne s'allument que quand le soleil est couché, en utilisant l'entité `sun.sun` intégrée à Home Assistant.
 - **Capteurs de luminosité + seuil** : les lumières ne s'allument que si la luminosité moyenne est inférieure au seuil.
