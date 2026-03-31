@@ -243,6 +243,27 @@ max_exceeded: silent
 
 trigger_variables:
   control_var: !input control_entities
+  lights_target: !input lights
+  expanded_lights: >
+    {% set target = lights_target %}
+    {% set ns = namespace(entities=[]) %}
+    {% if target.entity_id is defined %}
+      {% set ids = [target.entity_id] if target.entity_id is string else target.entity_id %}
+      {% set ns.entities = ns.entities + ids %}
+    {% endif %}
+    {% if target.area_id is defined %}
+      {% set areas = [target.area_id] if target.area_id is string else target.area_id %}
+      {% for a in areas %}
+        {% set ns.entities = ns.entities + (area_entities(a) | select('match', 'light\\.') | list) %}
+      {% endfor %}
+    {% endif %}
+    {% if target.device_id is defined %}
+      {% set devices = [target.device_id] if target.device_id is string else target.device_id %}
+      {% for d in devices %}
+        {% set ns.entities = ns.entities + (device_entities(d) | select('match', 'light\\.') | list) %}
+      {% endfor %}
+    {% endif %}
+    {{ ns.entities | unique | list }}
 
 variables:
   # Feature flags
@@ -370,9 +391,9 @@ trigger:
       service: reload
     id: automations_reload_service
 
-  - trigger: event
+  - trigger: state
     alias: Target light state changed
-    event_type: state_changed
+    entity_id: "{{ expanded_lights }}"
     id: light_state_changed
 
   - trigger: sun
@@ -530,27 +551,21 @@ action:
           - condition: trigger
             id:
               - light_state_changed
-          - >
-            {% set event = trigger.event.data if trigger.event is defined and trigger.event.data is defined else none %}
-            {{ event is not none
-               and event.entity_id is defined
-               and event.entity_id in expanded_light_entities }}
         sequence:
           # Disable adaptive on color mode
           - if:
               - >
-                {% set event = trigger.event.data %}
                 {{ disable_on_color
                    and auto_mode_input_entity not in ['', none]
                    and auto_mode_input_entity.startswith('input_boolean.')
-                   and event.new_state is not none
-                   and event.new_state.state == 'on'
-                   and event.new_state.attributes.color_mode is defined
-                   and event.new_state.attributes.color_mode not in ['color_temp', 'white']
+                   and trigger.to_state is not none
+                   and trigger.to_state.state == 'on'
+                   and trigger.to_state.attributes.color_mode is defined
+                   and trigger.to_state.attributes.color_mode not in ['color_temp', 'white']
                    and (
-                     event.old_state is none
-                     or event.old_state.attributes.color_mode is not defined
-                     or event.old_state.attributes.color_mode != event.new_state.attributes.color_mode
+                     trigger.from_state is none
+                     or trigger.from_state.attributes.color_mode is not defined
+                     or trigger.from_state.attributes.color_mode != trigger.to_state.attributes.color_mode
                    ) }}
             then:
               - action: input_boolean.turn_off
@@ -560,12 +575,11 @@ action:
           # Restore control entity when all lights turn off
           - if:
               - >
-                {% set event = trigger.event.data %}
                 {{ restore_on_off
                    and auto_mode_input_entity not in ['', none]
                    and auto_mode_input_entity.startswith('input_boolean.')
-                   and event.new_state is not none
-                   and event.new_state.state == 'off'
+                   and trigger.to_state is not none
+                   and trigger.to_state.state == 'off'
                    and (expand(expanded_light_entities) | selectattr('state', 'eq', 'on') | list | count) == 0 }}
             then:
               - action: input_boolean.turn_on
@@ -574,10 +588,9 @@ action:
               - stop: "Restored control entity after all lights turned off"
           # Apply adaptive values when a light turns on
           - condition: >
-              {% set event = trigger.event.data %}
-              {{ event.new_state is not none
-                 and event.new_state.state == 'on'
-                 and (event.old_state is none or event.old_state.state != 'on') }}
+              {{ trigger.to_state is not none
+                 and trigger.to_state.state == 'on'
+                 and (trigger.from_state is none or trigger.from_state.state != 'on') }}
           - condition: >
               {{ auto_mode_input_entity in ['', none]
                  or is_state(auto_mode_input_entity, 'on') }}
@@ -585,7 +598,7 @@ action:
               milliseconds: 200
           - variables:
               [[include:adaptive_variables.yaml]]
-              current_light: "{{ trigger.event.data.entity_id }}"
+              current_light: "{{ trigger.entity_id }}"
           - variables:
               [[include:light_capability_variables.yaml]]
           - choose:
