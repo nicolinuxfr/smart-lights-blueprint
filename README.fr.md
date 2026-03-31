@@ -27,8 +27,8 @@ https://raw.githubusercontent.com/nicolinuxfr/smart-lights-blueprint/gh-pages/fr
 | Paramètre | Description | Défaut |
 |-----------|-------------|--------|
 | **Capteurs** | Capteurs binaires qui déclenchent les lumières (mouvement, ouverture de porte/fenêtre, etc.) | — |
-| **Interrupteur** | Un `input_boolean` utilisé comme toggle pour les lumières, généralement basculé par une autre automatisation | — |
-| **Délai d'extinction** | Temps à attendre avant d'éteindre les lumières après qu'un capteur est devenu inactif | 00:02:00 |
+| **Interrupteur** | Un `input_boolean` utilisé comme toggle pour les lumières, généralement basculé par une autre automatisation. Le désactiver éteint immédiatement les lumières | — |
+| **Délai d'extinction** | Temps à attendre avant d'éteindre les lumières après que les capteurs sont devenus inactifs | 00:02:00 |
 
 ### Allumage auto – Conditions d'éclairage
 
@@ -78,7 +78,7 @@ https://raw.githubusercontent.com/nicolinuxfr/smart-lights-blueprint/gh-pages/fr
 1. Quand un capteur sélectionné devient actif (mouvement détecté, porte ouverte, etc.), les lumières s'allument.
 2. Quand tous les capteurs deviennent inactifs, le blueprint attend le délai configuré avant d'éteindre les lumières.
 3. Si un capteur redevient actif pendant le délai, le minuteur se réinitialise et les lumières restent allumées.
-4. L'entrée **interrupteur** optionnelle utilise un `input_boolean` comme toggle pour les lumières. Vous pouvez le basculer depuis une autre automatisation, par exemple lors de l'appui sur un interrupteur ou bouton physique.
+4. L'entrée **interrupteur** optionnelle utilise un `input_boolean` comme toggle pour les lumières. Vous pouvez le basculer depuis une autre automatisation, par exemple lors de l'appui sur un interrupteur ou bouton physique. Le désactiver éteint toujours les lumières immédiatement.
 5. Par défaut, les capteurs de porte/fenêtre restés ouverts n'empêchent pas l'extinction — seuls les capteurs de mouvement/présence sont vérifiés.
 
 #### Conditions d'éclairage

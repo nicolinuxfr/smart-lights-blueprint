@@ -507,9 +507,7 @@ action:
           - if:
               - condition: template
                 value_template: >-
-                  {{ expand(expanded_light_entities)
-                     | selectattr('state', 'eq', 'on')
-                     | list | count > 0 }}
+                  {{ is_state(switch_entity, 'off') }}
             then:
               - action: light.turn_off
                 target: !input lights

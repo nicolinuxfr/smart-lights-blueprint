@@ -27,8 +27,8 @@ https://raw.githubusercontent.com/nicolinuxfr/smart-lights-blueprint/gh-pages/en
 | Input | Description | Default |
 |-------|-------------|---------|
 | **Sensors** | Binary sensors that trigger the lights (motion, door/window, etc.) | — |
-| **Switch** | An `input_boolean` used as a toggle for the lights, typically flipped by another automation | — |
-| **Turn off delay** | Time to wait before turning off the lights after a sensor becomes inactive | 00:02:00 |
+| **Switch** | An `input_boolean` used as a toggle for the lights, typically flipped by another automation. Turning it off turns the lights off immediately | — |
+| **Turn off delay** | Time to wait before turning off the lights after sensors become inactive | 00:02:00 |
 
 ### Auto on/off – Lighting conditions
 
@@ -78,7 +78,7 @@ https://raw.githubusercontent.com/nicolinuxfr/smart-lights-blueprint/gh-pages/en
 1. When any selected sensor becomes active (motion detected, door opened, etc.), the lights turn on.
 2. When all sensors become inactive, the blueprint waits for the configured delay before turning off the lights.
 3. If a sensor becomes active again during the delay, the timer resets and the lights stay on.
-4. The optional **switch** input uses an `input_boolean` as a toggle for the lights. You can flip it from another automation, for example when a physical switch or button is pressed.
+4. The optional **switch** input uses an `input_boolean` as a toggle for the lights. You can flip it from another automation, for example when a physical switch or button is pressed. Turning it off always turns the lights off immediately.
 5. By default, open door/window sensors do not prevent the lights from turning off — only motion/presence sensors are checked.
 
 #### Lighting conditions
