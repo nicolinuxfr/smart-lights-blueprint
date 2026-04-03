@@ -332,14 +332,9 @@ trigger:
          expand(control_var) | selectattr('state', 'eq', 'off') | list | count > 0 }}
     id: control_off
 
-  - trigger: state
-    entity_id: !input switch_entity
-    not_from:
-      - "unavailable"
-      - "unknown"
-    not_to:
-      - "unavailable"
-      - "unknown"
+  - trigger: event
+    alias: Switch entity changed
+    event_type: state_changed
     id: switch_toggled
 
   # ===== ADAPTIVE LIGHTING TRIGGERS =====
@@ -351,15 +346,11 @@ trigger:
   - trigger: event
     alias: Auto mode entity changed
     event_type: state_changed
-    event_data:
-      entity_id: !input auto_mode_boolean
     id: auto_mode_enabled
 
   - trigger: event
     alias: Night mode entity changed
     event_type: state_changed
-    event_data:
-      entity_id: !input night_mode_entity
     id: night_mode_changed
 
   - trigger: event
@@ -481,7 +472,15 @@ action:
           - condition: trigger
             id:
               - switch_toggled
-          - "{{ switch_entity not in ('', none) }}"
+          - >
+            {{ switch_entity not in ('', none)
+               and trigger.event is defined
+               and trigger.event.data is defined
+               and trigger.event.data.entity_id == switch_entity
+               and trigger.event.data.new_state is not none
+               and trigger.event.data.old_state is not none
+               and trigger.event.data.old_state.state not in ['unavailable', 'unknown']
+               and trigger.event.data.new_state.state not in ['unavailable', 'unknown'] }}
         sequence:
           - if:
               - condition: template
@@ -607,6 +606,7 @@ action:
               {{ auto_mode_input_entity not in ['', none]
                  and trigger.event is defined
                  and trigger.event.data is defined
+                 and trigger.event.data.entity_id == auto_mode_input_entity
                  and trigger.event.data.new_state is not none
                  and trigger.event.data.new_state.state == 'on'
                  and (trigger.event.data.old_state is none or trigger.event.data.old_state.state != 'on') }}
@@ -614,6 +614,7 @@ action:
               {{ night_mode_entity_id not in ['', none]
                  and trigger.event is defined
                  and trigger.event.data is defined
+                 and trigger.event.data.entity_id == night_mode_entity_id
                  and trigger.event.data.new_state is not none
                  and (trigger.event.data.old_state is none or trigger.event.data.old_state.state != trigger.event.data.new_state.state) }}
             {% else %}
