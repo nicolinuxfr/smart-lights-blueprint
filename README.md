@@ -59,8 +59,8 @@ https://raw.githubusercontent.com/nicolinuxfr/smart-lights-blueprint/gh-pages/en
 | Input | Description | Default |
 |-------|-------------|---------|
 | **Automatic adaptation control** | An `input_boolean` or `binary_sensor` that controls lighting adaptations | — |
-| **Automatic re-activation** | Re-enable the control entity when all lights turn off | Off |
-| **Automatic deactivation on color** | Disable the control entity when a light switches to color mode | Off |
+| **Automatic re-activation** | Re-enable the control entity when all lights turn off. Requires the control entity to be an `input_boolean` | Off |
+| **Automatic deactivation on color** | Disable the control entity when a light switches to color mode. Requires the control entity to be an `input_boolean` | Off |
 | **Weather-based variation** | A weather entity to adjust settings based on weather conditions | — |
 
 ### Adaptive lighting – Night mode

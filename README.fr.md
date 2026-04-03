@@ -59,8 +59,8 @@ https://raw.githubusercontent.com/nicolinuxfr/smart-lights-blueprint/gh-pages/fr
 | Paramètre | Description | Défaut |
 |-----------|-------------|--------|
 | **Contrôle de l'adaptation** | Un `input_boolean` ou `binary_sensor` qui contrôle les adaptations | — |
-| **Réactivation automatique** | Réactive l'entité de contrôle quand toutes les lumières s'éteignent | Désactivé |
-| **Désactivation sur couleur** | Désactive l'entité de contrôle quand une lumière passe en couleur | Désactivé |
+| **Réactivation automatique** | Réactive l'entité de contrôle quand toutes les lumières s'éteignent. Nécessite un `input_boolean` | Désactivé |
+| **Désactivation sur couleur** | Désactive l'entité de contrôle quand une lumière passe en couleur. Nécessite un `input_boolean` | Désactivé |
 | **Variation météo** | Entité météo pour ajuster les paramètres selon les conditions climatiques | — |
 
 ### Éclairage adaptatif – Mode nuit
