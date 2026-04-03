@@ -292,32 +292,24 @@ variables:
 
 trigger:
   # ===== AUTO ON/OFF TRIGGERS =====
-  - trigger: state
-    entity_id: !input sensors
-    to: "on"
-    not_from:
-      - "unavailable"
-      - "unknown"
+  - trigger: event
+    alias: Sensor turned on
+    event_type: state_changed
     id: sensor_on
 
-  - trigger: state
-    entity_id: !input sensors
-    to: "off"
-    not_from:
-      - "unavailable"
-      - "unknown"
+  - trigger: event
+    alias: Sensor turned off
+    event_type: state_changed
     id: sensor_off
 
-  - trigger: state
-    entity_id: !input sensors
-    from: "unavailable"
-    to: "off"
+  - trigger: event
+    alias: Sensor recovered from unavailable
+    event_type: state_changed
     id: ha_start
 
-  - trigger: state
-    entity_id: !input sensors
-    from: "unknown"
-    to: "off"
+  - trigger: event
+    alias: Sensor recovered from unknown
+    event_type: state_changed
     id: ha_start
 
   - trigger: template
@@ -388,17 +380,30 @@ action:
               - sensor_on
               - control_on
           - >-
+            {% if trigger.id == 'sensor_on' %}
+              {{ trigger.event is defined
+                 and trigger.event.data is defined
+                 and trigger.event.data.entity_id is string
+                 and trigger.event.data.entity_id in sensors
+                 and trigger.event.data.new_state is not none
+                 and trigger.event.data.new_state.state == 'on'
+                 and trigger.event.data.old_state is not none
+                 and trigger.event.data.old_state.state not in ['unavailable', 'unknown'] }}
+            {% else %}
+              true
+            {% endif %}
+          - >-
             {% if trigger.id == 'control_on' %}
               {{ expand(sensors) | selectattr('state', 'eq', 'on') | list | count > 0 }}
             {% else %}
-              {{ trigger.from_state.state not in ['unavailable', 'unknown'] }}
+              {{ trigger.event.data.old_state.state not in ['unavailable', 'unknown'] }}
             {% endif %}
           - >-
             {{ control_entities in (none, [], '') or
                expand(control_entities) | rejectattr('state', 'eq', 'on') | list | count == 0 }}
           - >-
             {{ trigger.id == 'control_on' or keep_on_open_doors or
-               state_attr(trigger.entity_id, 'device_class') in ['motion', 'occupancy', 'presence'] }}
+               state_attr(trigger.event.data.entity_id, 'device_class') in ['motion', 'occupancy', 'presence'] }}
           - >-
             {% set ls = light_sensors %}
             {% set thr = light_threshold | float(0) %}
@@ -435,17 +440,46 @@ action:
               - sensor_off
               - control_off
               - ha_start
+          - >-
+            {% if trigger.id == 'sensor_off' %}
+              {{ trigger.event is defined
+                 and trigger.event.data is defined
+                 and trigger.event.data.entity_id is string
+                 and trigger.event.data.entity_id in sensors
+                 and trigger.event.data.old_state is not none
+                 and trigger.event.data.old_state.state not in ['unavailable', 'unknown']
+                 and trigger.event.data.new_state is not none
+                 and trigger.event.data.new_state.state == 'off' }}
+            {% elif trigger.id == 'ha_start' %}
+              {{ trigger.event is defined
+                 and trigger.event.data is defined
+                 and trigger.event.data.entity_id is string
+                 and trigger.event.data.entity_id in sensors
+                 and trigger.event.data.old_state is not none
+                 and trigger.event.data.old_state.state in ['unavailable', 'unknown']
+                 and trigger.event.data.new_state is not none
+                 and trigger.event.data.new_state.state == 'off' }}
+            {% else %}
+              true
+            {% endif %}
         sequence:
           - wait_for_trigger:
-              - trigger: state
-                entity_id: !input sensors
-                to: "on"
-                not_from:
-                  - "unavailable"
-                  - "unknown"
+              - trigger: event
+                event_type: state_changed
             timeout: !input off_delay
             continue_on_timeout: true
-          - condition: "{{ wait.trigger is none }}"
+          - condition: >-
+              {{ wait.trigger is none
+                 or not (
+                   wait.trigger.event is defined
+                   and wait.trigger.event.data is defined
+                   and wait.trigger.event.data.entity_id is string
+                   and wait.trigger.event.data.entity_id in sensors
+                   and wait.trigger.event.data.new_state is not none
+                   and wait.trigger.event.data.new_state.state == 'on'
+                   and wait.trigger.event.data.old_state is not none
+                   and wait.trigger.event.data.old_state.state not in ['unavailable', 'unknown']
+                 ) }}
           - condition: >-
               {{ trigger.id == 'control_off' or
                  control_entities in (none, [], '') or
