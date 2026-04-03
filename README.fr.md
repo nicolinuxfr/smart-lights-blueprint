@@ -104,3 +104,4 @@ Quand cette option est activée, le blueprint ajuste la luminosité et la tempé
 - **Météo** : ajuste optionnellement la luminosité et la température en fonction des conditions météo (nuageux, pluvieux, etc.).
 
 Les valeurs adaptatives sont appliquées à l'allumage des lumières et mises à jour toutes les 5 minutes tant que les lumières restent allumées.
+Les changements d'état des lumières sont aussi bien suivis quand les cibles sont sélectionnées via des entités, des appareils ou des zones.

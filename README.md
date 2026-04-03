@@ -104,3 +104,4 @@ When enabled, the blueprint adjusts brightness and color temperature throughout 
 - **Weather**: optionally adjusts brightness and color temperature based on weather conditions (cloudy, rainy, etc.).
 
 Adaptive values are applied when lights turn on and updated every 5 minutes while lights remain on.
+Light state changes are also tracked correctly when the target lights are selected via entities, devices, or areas.
