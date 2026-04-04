@@ -15,11 +15,16 @@ k_night: !input kelvin_night
 k_day: !input kelvin_day
 nm_brightness: !input night_mode_brightness
 nm_kelvin: !input night_mode_kelvin
-enable_auto_onoff: !input enable_auto_onoff
 enable_adaptive: !input enable_adaptive
 night_only: !input night_only
 restore_on_off: !input restore_on_off
 disable_on_color: !input disable_on_color
+auto_onoff_enabled: >-
+  {% set has_sensors = sensors not in (none, [], '') %}
+  {% set has_switch = switch_entity not in (none, '') %}
+  {% set has_controls = control_entities_on not in (none, [], '')
+     or control_entities_off not in (none, [], '') %}
+  {{ has_sensors or has_switch or has_controls }}
 expanded_light_entities: >
   {% set target = lights %}
   {% set ns = namespace(entities=[]) %}

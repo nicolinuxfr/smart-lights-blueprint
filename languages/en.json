@@ -16,8 +16,6 @@
   "input.disable_on_color.name": "Disable on color mode",
   "input.enable_adaptive.description": "Automatically adjust brightness and color temperature based on the sun position throughout the day.",
   "input.enable_adaptive.name": "Enable adaptive lighting",
-  "input.enable_auto_onoff.description": "Automatically turn lights on and off based on motion sensors and door sensors.",
-  "input.enable_auto_onoff.name": "Enable automatic on/off",
   "input.keep_on_open_doors.description": "When enabled, open door/window sensors keep the lights on. When disabled, only motion, occupancy, and presence sensors keep lights on.",
   "input.keep_on_open_doors.name": "Keep lights on with open doors",
   "input.kelvin_day.description": "Coolest white temperature around the middle of the day.",
@@ -51,9 +49,7 @@
   "section.adaptive.curve": "Adaptive – Brightness and color",
   "section.adaptive.curve.description": "Daytime adaptive curve for brightness and white temperature.",
   "section.adaptive.options": "Adaptive – Options",
-  "section.adaptive.options.description": "External control, weather adjustment, and night mode settings.",
-  "section.auto_onoff.basics": "Auto on/off – Basics",
-  "section.auto_onoff.basics.description": "Core sensor-driven lighting behavior.",
+  "section.adaptive.options.description": "External control and weather adjustment.",
   "section.auto_onoff.options": "Auto on/off – Options",
-  "section.auto_onoff.options.description": "Optional switch binding, turn-on conditions, and control entities."
+  "section.auto_onoff.options.description": "Turn-on conditions and control entities."
 }

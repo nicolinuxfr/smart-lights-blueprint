@@ -4,13 +4,6 @@ auto_onoff_options_section:
   description: "[[section.auto_onoff.options.description]]"
   collapsed: true
   input:
-    switch_entity:
-      name: "[[input.switch_entity.name]]"
-      description: "[[input.switch_entity.description]]"
-      default: ""
-      selector:
-        entity:
-          domain: input_boolean
     night_only:
       name: "[[input.night_only.name]]"
       description: "[[input.night_only.description]]"

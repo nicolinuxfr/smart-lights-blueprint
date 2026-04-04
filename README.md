@@ -17,8 +17,8 @@ https://raw.githubusercontent.com/nicolinuxfr/smart-lights-blueprint/gh-pages/en
 ## Quick start
 
 1. Select the target **Lights**.
-2. Enable **automatic on/off** and/or **adaptive lighting**.
-3. Fill only the sections needed for the features you enabled.
+2. Fill **Sensors** and/or the **Switch entity** if you want automatic on/off.
+3. Enable **adaptive lighting** if needed, then fill only the relevant options.
 
 ## Configuration
 
@@ -27,21 +27,20 @@ https://raw.githubusercontent.com/nicolinuxfr/smart-lights-blueprint/gh-pages/en
 | Input | Description | Default |
 |-------|-------------|---------|
 | **Lights** | Lights, devices, or areas to control | — |
-| **Enable automatic on/off** | Turn sensor-based automatic on/off on or off | `true` |
 | **Enable adaptive lighting** | Turn adaptive brightness and white temperature on or off | `false` |
 
-### Auto on/off – Basics
+### Main inputs
 
 | Input | Description | Default |
 |-------|-------------|---------|
 | **Sensors** | Binary sensors used for automatic on/off | `[]` |
 | **Turn off delay** | Delay before lights turn off after sensors go inactive | `00:02:00` |
+| **Switch entity** | Optional `input_boolean` used as an external toggle that always turns the managed lights on or off immediately, while staying synced with their all-on/all-off state | `""` |
 
 ### Auto on/off – Options
 
 | Input | Description | Default |
 |-------|-------------|---------|
-| **Switch entity** | Optional `input_boolean` used as an external toggle that always turns the managed lights on or off immediately, while staying synced with their all-on/all-off state | `""` |
 | **Night only** | Allow sensor-based turn-on only when the sun is below the horizon | `false` |
 | **Illuminance sensors** | Sensors used by the low-lux rules | `[]` |
 | **Illuminance threshold** | Average lux must be below this value for the illuminance condition to allow turn-on | `30 lx` |
@@ -57,6 +56,9 @@ https://raw.githubusercontent.com/nicolinuxfr/smart-lights-blueprint/gh-pages/en
 | **Maximum brightness** | Brightness around midday | `100%` |
 | **Minimum temperature** | Warmest white temperature around sunrise and sunset | `2700 K` |
 | **Maximum temperature** | Coolest white temperature around midday | `5500 K` |
+| **Night mode entity** | Optional `input_boolean` or `binary_sensor` that activates fixed night values | `""` |
+| **Night brightness** | Fixed brightness while night mode is active | `20%` |
+| **Night temperature** | Fixed white temperature while night mode is active | `2200 K` |
 
 ### Adaptive – Options
 
@@ -66,15 +68,12 @@ https://raw.githubusercontent.com/nicolinuxfr/smart-lights-blueprint/gh-pages/en
 | **Automatic re-activation** | Re-enable the adaptive control entity when all managed lights turn off | `false` |
 | **Disable on color mode** | Disable the adaptive control entity when a managed light switches to color mode | `false` |
 | **Weather entity** | Optional weather entity used to shift adaptive values | `""` |
-| **Night mode entity** | Optional `input_boolean` or `binary_sensor` that activates fixed night values | `""` |
-| **Night brightness** | Fixed brightness while night mode is active | `20%` |
-| **Night temperature** | Fixed white temperature while night mode is active | `2200 K` |
 
 ## Feature combinations
 
-- **Automatic on/off only**: the blueprint reacts to sensors and optional control entities, but does not change brightness or color temperature adaptively.
-- **Adaptive lighting only**: the blueprint tracks managed light state changes and refreshes adaptive values while lights are on, without using sensors for on/off.
-- **Both enabled**: sensor-based on/off and adaptive updates are both active.
+- **Automatic on/off only**: configure **Sensors**, **control switches**, and/or the **Switch entity**, without enabling adaptive lighting.
+- **Adaptive lighting only**: enable adaptive lighting and leave **Sensors** plus the **Switch entity** empty if you do not want automatic on/off.
+- **Both enabled**: combine the automatic on/off inputs with adaptive lighting.
 
 ## Turn-on conditions
 
@@ -87,6 +86,7 @@ These conditions apply only to sensor-based turn-on. The optional switch entity 
 
 ## Notes
 
+- Automatic on/off becomes active as soon as at least one **Sensor**, **Switch entity**, or **control switch** is configured.
 - The optional switch entity is synchronized from the managed lights: it turns on when they are all on and turns off when they are all off, without re-triggering redundant light commands.
 - Adaptive values are applied when a managed light turns on and refreshed every 5 minutes while compatible target lights remain on.
 - The blueprint keeps working when lights are selected via entities, devices, or areas.

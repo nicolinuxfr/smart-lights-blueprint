@@ -16,8 +16,6 @@
   "input.disable_on_color.name": "Désactiver sur mode couleur",
   "input.enable_adaptive.description": "Ajuste automatiquement la luminosité et la température de couleur en fonction de la position du soleil tout au long de la journée.",
   "input.enable_adaptive.name": "Activer l'éclairage adaptatif",
-  "input.enable_auto_onoff.description": "Allume et éteint automatiquement les lumières en fonction des capteurs de mouvement et capteurs d'ouverture.",
-  "input.enable_auto_onoff.name": "Activer l'allumage/extinction automatique",
   "input.keep_on_open_doors.description": "Quand activé, les capteurs de porte/fenêtre ouverts maintiennent les lumières allumées. Quand désactivé, seuls les capteurs de mouvement, présence et occupation maintiennent les lumières allumées.",
   "input.keep_on_open_doors.name": "Maintenir les lumières avec portes ouvertes",
   "input.kelvin_day.description": "Température de blanc la plus froide autour du milieu de journée.",
@@ -51,9 +49,7 @@
   "section.adaptive.curve": "Adaptatif – Luminosité et couleur",
   "section.adaptive.curve.description": "Courbe adaptative de journée pour la luminosité et la température de blanc.",
   "section.adaptive.options": "Adaptatif – Options",
-  "section.adaptive.options.description": "Contrôle externe, ajustement météo et réglages du mode nuit.",
-  "section.auto_onoff.basics": "Allumage auto – Essentiel",
-  "section.auto_onoff.basics.description": "Comportement principal piloté par capteurs.",
+  "section.adaptive.options.description": "Contrôle externe et ajustement météo.",
   "section.auto_onoff.options": "Allumage auto – Options",
-  "section.auto_onoff.options.description": "Interrupteur optionnel, conditions d'allumage et entités de contrôle."
+  "section.auto_onoff.options.description": "Conditions d'allumage et entités de contrôle."
 }

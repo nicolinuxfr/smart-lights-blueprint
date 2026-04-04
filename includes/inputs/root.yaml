@@ -5,12 +5,6 @@ lights:
     target:
       entity:
         domain: light
-enable_auto_onoff:
-  name: "[[input.enable_auto_onoff.name]]"
-  description: "[[input.enable_auto_onoff.description]]"
-  default: true
-  selector:
-    boolean:
 enable_adaptive:
   name: "[[input.enable_adaptive.name]]"
   description: "[[input.enable_adaptive.description]]"

@@ -37,7 +37,7 @@ condition:
 action:
   - choose:
       - conditions:
-          - "{{ enable_auto_onoff | bool }}"
+          - "{{ auto_onoff_enabled | bool }}"
           - condition: trigger
             id:
               - sensor_on
@@ -87,7 +87,7 @@ action:
                 target: !input lights
 
       - conditions:
-          - "{{ enable_auto_onoff | bool }}"
+          - "{{ auto_onoff_enabled | bool }}"
           - condition: trigger
             id:
               - sensor_off
@@ -140,7 +140,7 @@ action:
             target: !input lights
 
       - conditions:
-          - "{{ enable_auto_onoff | bool }}"
+          - "{{ auto_onoff_enabled | bool }}"
           - condition: trigger
             id:
               - switch_toggled
