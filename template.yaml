@@ -9,11 +9,7 @@ blueprint:
     min_version: 2024.6.0
   source_url: https://github.com/nicolinuxfr/smart-lights-blueprint/blob/main/template.yaml
   input:
-    [[include:inputs/root.yaml]]
-    [[include:inputs/auto_onoff_basics.yaml]]
-    [[include:inputs/auto_onoff_options.yaml]]
-    [[include:inputs/adaptive_curve.yaml]]
-    [[include:inputs/adaptive_options.yaml]]
+    [[include:inputs.yaml]]
 
 mode: parallel
 max: 10
@@ -22,19 +18,17 @@ trace:
   stored_traces: 20
 
 trigger_variables:
-  [[include:variables/trigger_inputs.yaml]]
+  control_entities_on_var: !input control_entities_on
+  control_entities_off_var: !input control_entities_off
 
 variables:
-  [[include:variables/common.yaml]]
+  [[include:variables.yaml]]
 
 trigger:
-  [[include:triggers/auto_onoff.yaml]]
-  [[include:triggers/adaptive.yaml]]
+  [[include:triggers.yaml]]
 
 condition:
-  [[include:conditions/event_gate.yaml]]
-  [[include:conditions/adaptive_mode_gate.yaml]]
-  [[include:conditions/proactive_adaptive_gate.yaml]]
+  [[include:conditions.yaml]]
 
 action:
   - choose:
@@ -77,7 +71,7 @@ action:
               - "{{ enable_adaptive | bool }}"
             then:
               - variables:
-                  [[include:adaptive/variables.yaml]]
+                  [[include:adaptive_variables.yaml]]
               - action: light.turn_on
                 target: !input lights
                 data:
@@ -148,7 +142,27 @@ action:
               - switch_toggled
         sequence:
           - variables:
-              [[include:variables/switch_toggle_state.yaml]]
+              switch_event_valid: >-
+                {{ switch_entity not in ('', none)
+                   and trigger.event is defined
+                   and trigger.event.data is defined
+                   and trigger.event.data.new_state is not none
+                   and trigger.event.data.old_state is not none
+                   and trigger.event.data.old_state.state not in ['unavailable', 'unknown']
+                   and trigger.event.data.new_state.state not in ['unavailable', 'unknown'] }}
+              switch_turning_on: >-
+                {{ (switch_event_valid | bool) and trigger.event.data.new_state.state == 'on' }}
+              switch_turning_off: >-
+                {{ (switch_event_valid | bool) and trigger.event.data.new_state.state == 'off' }}
+              target_lights_count: >-
+                {{ expand(expanded_light_entities) | list | count }}
+              target_lights_on_count: >-
+                {{ expand(expanded_light_entities) | selectattr('state', 'eq', 'on') | list | count }}
+              all_target_lights_off: >-
+                {{ (target_lights_on_count | int(0)) == 0 }}
+              all_target_lights_on: >-
+                {{ (target_lights_count | int(0)) > 0
+                   and (target_lights_on_count | int(0)) == (target_lights_count | int(0)) }}
           - condition: "{{ switch_event_valid | bool }}"
           - if:
               - "{{ switch_turning_off | bool }}"
@@ -368,16 +382,68 @@ action:
           - delay:
               milliseconds: 200
           - variables:
-              [[include:adaptive/variables.yaml]]
+              [[include:adaptive_variables.yaml]]
           - repeat:
               for_each: "{{ on_lights }}"
               sequence:
                 - variables:
                     current_light: "{{ repeat.item }}"
                 - variables:
-                    [[include:adaptive/light_capabilities.yaml]]
+                    modes: "{{ state_attr(current_light, 'supported_color_modes') or [] }}"
+                    modes_count: "{{ modes | count }}"
+                    min_k: "{{ state_attr(current_light, 'min_color_temp_kelvin') | float(0) }}"
+                    max_k: "{{ state_attr(current_light, 'max_color_temp_kelvin') | float(0) }}"
+                    has_brightness_attr: "{{ state_attr(current_light, 'brightness') is not none }}"
+                    has_ct_kelvin_attr: "{{ state_attr(current_light, 'color_temp_kelvin') is not none }}"
+                    has_ct_attr: "{{ state_attr(current_light, 'color_temp') is not none }}"
+                    onoff_only: "{{ (modes_count == 1) and (modes[0] == 'onoff') }}"
+                    supports_ct: >
+                      {{ 'color_temp' in modes
+                         or (min_k > 0 and max_k > 0)
+                         or has_ct_kelvin_attr
+                         or has_ct_attr }}
+                    supports_brightness: >
+                      {{ has_brightness_attr
+                         or (modes_count == 0)
+                         or not onoff_only }}
+                    clamped_kelvin: >
+                      {% if min_k > 0 and max_k > 0 %}
+                        {{ [min_k, [effective_kelvin | float(0), max_k] | min] | max | round(0) | int }}
+                      {% else %}
+                        {{ effective_kelvin | int(0) }}
+                      {% endif %}
                 - choose:
-                    [[include:adaptive/light_update_choose.yaml]]
+                    - conditions:
+                        - "{{ (supports_brightness | bool) and (supports_ct | bool) }}"
+                      sequence:
+                        - action: light.turn_on
+                          continue_on_error: true
+                          target:
+                            entity_id: "{{ current_light }}"
+                          data:
+                            transition: 1
+                            brightness_pct: "{{ effective_brightness | int(0) }}"
+                            color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                    - conditions:
+                        - "{{ supports_brightness | bool }}"
+                      sequence:
+                        - action: light.turn_on
+                          continue_on_error: true
+                          target:
+                            entity_id: "{{ current_light }}"
+                          data:
+                            transition: 1
+                            brightness_pct: "{{ effective_brightness | int(0) }}"
+                    - conditions:
+                        - "{{ supports_ct | bool }}"
+                      sequence:
+                        - action: light.turn_on
+                          continue_on_error: true
+                          target:
+                            entity_id: "{{ current_light }}"
+                          data:
+                            transition: 1
+                            color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
 
       - conditions:
           - "{{ enable_adaptive | bool }}"
@@ -418,14 +484,36 @@ action:
                    | list }}
           - condition: "{{ on_lights | count > 0 }}"
           - variables:
-              [[include:adaptive/variables.yaml]]
+              [[include:adaptive_variables.yaml]]
           - repeat:
               for_each: "{{ on_lights }}"
               sequence:
                 - variables:
                     current_light: "{{ repeat.item }}"
                 - variables:
-                    [[include:adaptive/light_capabilities.yaml]]
+                    modes: "{{ state_attr(current_light, 'supported_color_modes') or [] }}"
+                    modes_count: "{{ modes | count }}"
+                    min_k: "{{ state_attr(current_light, 'min_color_temp_kelvin') | float(0) }}"
+                    max_k: "{{ state_attr(current_light, 'max_color_temp_kelvin') | float(0) }}"
+                    has_brightness_attr: "{{ state_attr(current_light, 'brightness') is not none }}"
+                    has_ct_kelvin_attr: "{{ state_attr(current_light, 'color_temp_kelvin') is not none }}"
+                    has_ct_attr: "{{ state_attr(current_light, 'color_temp') is not none }}"
+                    onoff_only: "{{ (modes_count == 1) and (modes[0] == 'onoff') }}"
+                    supports_ct: >
+                      {{ 'color_temp' in modes
+                         or (min_k > 0 and max_k > 0)
+                         or has_ct_kelvin_attr
+                         or has_ct_attr }}
+                    supports_brightness: >
+                      {{ has_brightness_attr
+                         or (modes_count == 0)
+                         or not onoff_only }}
+                    clamped_kelvin: >
+                      {% if min_k > 0 and max_k > 0 %}
+                        {{ [min_k, [effective_kelvin | float(0), max_k] | min] | max | round(0) | int }}
+                      {% else %}
+                        {{ effective_kelvin | int(0) }}
+                      {% endif %}
                     tick_updates_brightness: "{{ trigger.id == 'tick' and ((now_ts | int(0) // 300) % 2 == 0) }}"
                     recently_turned_on: >
                       {% set last_changed_ts = as_timestamp(states[current_light].last_changed) | float(0) %}
@@ -484,7 +572,37 @@ action:
                             transition: 15
                             brightness_pct: "{{ effective_brightness | int(0) if night_mode_active else current_brightness_pct | int(0) }}"
                             color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
-                    [[include:adaptive/light_update_choose.yaml]]
+                    - conditions:
+                        - "{{ (supports_brightness | bool) and (supports_ct | bool) }}"
+                      sequence:
+                        - action: light.turn_on
+                          continue_on_error: true
+                          target:
+                            entity_id: "{{ current_light }}"
+                          data:
+                            transition: 1
+                            brightness_pct: "{{ effective_brightness | int(0) }}"
+                            color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                    - conditions:
+                        - "{{ supports_brightness | bool }}"
+                      sequence:
+                        - action: light.turn_on
+                          continue_on_error: true
+                          target:
+                            entity_id: "{{ current_light }}"
+                          data:
+                            transition: 1
+                            brightness_pct: "{{ effective_brightness | int(0) }}"
+                    - conditions:
+                        - "{{ supports_ct | bool }}"
+                      sequence:
+                        - action: light.turn_on
+                          continue_on_error: true
+                          target:
+                            entity_id: "{{ current_light }}"
+                          data:
+                            transition: 1
+                            color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
                   default:
                     - action: light.turn_on
                       continue_on_error: true

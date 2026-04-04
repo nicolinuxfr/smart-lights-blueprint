@@ -92,3 +92,9 @@ These conditions apply only to sensor-based turn-on. The optional switch entity 
 - The blueprint keeps working when lights are selected via entities, devices, or areas.
 - **Automatic re-activation** and **Disable on color mode** only take effect when the adaptive control entity is an `input_boolean`.
 - The blueprint now keeps 20 traces and avoids the previous global `state_changed` listener that could flood Home Assistant trace history with empty runs.
+
+## Development
+
+- Reusable YAML snippets are grouped into a few broad files under `includes/`: `inputs.yaml`, `variables.yaml`, `triggers.yaml`, `conditions.yaml`, and `adaptive_variables.yaml`.
+- The smaller context-specific adaptive update branches stay directly in `template.yaml` to avoid fragmenting the blueprint across too many tiny files.
+- `scripts/generate_blueprints.py` resolves `[[include:...]]` tokens before i18n placeholders, then renders localized files to `dist/`.

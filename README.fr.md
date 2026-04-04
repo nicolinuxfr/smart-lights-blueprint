@@ -93,3 +93,9 @@ Ces conditions s'appliquent uniquement à l'allumage via capteur. L'entité inte
 - Le blueprint continue de fonctionner quand les lumières sont sélectionnées via des entités, des appareils ou des zones.
 - **Réactivation automatique** et **Désactiver sur mode couleur** ne prennent effet que si l'entité de contrôle adaptatif est un `input_boolean`.
 - Le blueprint conserve maintenant 20 traces et n'utilise plus l'écouteur global `state_changed` qui pouvait remplir l'historique de traces d'exécutions vides.
+
+## Développement
+
+- Les snippets YAML réutilisables sont regroupés dans quelques gros fichiers sous `includes/` : `inputs.yaml`, `variables.yaml`, `triggers.yaml`, `conditions.yaml` et `adaptive_variables.yaml`.
+- Les petites branches adaptatives dépendantes du contexte restent directement dans `template.yaml` pour éviter de disperser le blueprint dans trop de micro-fichiers.
+- `scripts/generate_blueprints.py` résout les jetons `[[include:...]]` avant les placeholders i18n, puis génère les fichiers localisés dans `dist/`.

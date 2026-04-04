@@ -18,11 +18,9 @@ Reusable YAML snippets live in `includes/`. The build script (`scripts/generate_
 - Include files may contain `[[i18n.key]]` placeholders — they are resolved in the next pass.
 - Includes are resolved in a single pass. Do not put `[[include:...]]` directives inside included files.
 - Current include layout:
-  - `inputs/*.yaml` — blueprint input groups and sections.
-  - `variables/trigger_inputs.yaml` — trigger-scoped blueprint inputs used by template triggers.
-  - `variables/common.yaml` — runtime variables and feature-flag derivation from public inputs.
-  - `triggers/*.yaml` — auto on/off and adaptive trigger blocks.
-  - `conditions/*.yaml` — top-level guard conditions for event validity and adaptive gating.
-  - `adaptive/variables.yaml` — sun position, weather factor, adaptive curve, brightness/kelvin computation.
-  - `adaptive/light_capabilities.yaml` — per-light capability detection (`supports_ct`, `supports_brightness`, `clamped_kelvin`). Expects `current_light` to be set before inclusion.
-  - `adaptive/light_update_choose.yaml` — per-light update branches based on brightness/color-temperature support. Expects `current_light`, `effective_brightness`, `clamped_kelvin`, `supports_brightness`, and `supports_ct`.
+  - `inputs.yaml` — all blueprint inputs and sections in one file.
+  - `variables.yaml` — shared runtime variables and feature-flag derivation from public inputs.
+  - `triggers.yaml` — all auto on/off and adaptive trigger blocks.
+  - `conditions.yaml` — top-level guard conditions for event validity and adaptive gating.
+  - `adaptive_variables.yaml` — shared adaptive runtime variables reused in several action branches.
+  - Context-specific adaptive per-light logic and switch-toggle state stay directly in `template.yaml` to avoid over-splitting includes.

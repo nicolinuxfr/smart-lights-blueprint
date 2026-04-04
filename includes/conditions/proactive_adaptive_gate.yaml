@@ -1,5 +1,0 @@
-- condition: template
-  value_template: >
-    {% set proactive_adaptive_trigger = trigger.id in ['tick', 'sun_event', 'auto_mode_enabled', 'night_mode_changed', 'automations_reload_service'] %}
-    {{ not proactive_adaptive_trigger
-       or (expand(expanded_light_entities) | selectattr('state', 'eq', 'on') | list | count) > 0 }}

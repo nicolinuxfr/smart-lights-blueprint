@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - template.yaml
+      - includes/**/*.yaml
       - languages/**/*.json
       - scripts/generate_blueprints.py
       - VERSION
@@ -12,6 +13,7 @@ on:
       - main
     paths:
       - template.yaml
+      - includes/**/*.yaml
       - languages/**/*.json
       - scripts/generate_blueprints.py
       - VERSION
