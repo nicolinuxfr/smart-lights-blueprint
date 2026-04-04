@@ -4,7 +4,6 @@ switch_entity: !input switch_entity
 keep_on_open_doors: !input keep_on_open_doors
 light_sensors: !input light_sensors
 light_threshold: !input light_threshold
-control_entities_on: !input control_entities_on
 control_entities_off: !input control_entities_off
 auto_mode_input_entity: !input auto_mode_boolean
 weather_entity_id: !input weather_entity
@@ -22,8 +21,7 @@ disable_on_color: !input disable_on_color
 auto_onoff_enabled: >-
   {% set has_sensors = sensors not in (none, [], '') %}
   {% set has_switch = switch_entity not in (none, '') %}
-  {% set has_controls = control_entities_on not in (none, [], '')
-     or control_entities_off not in (none, [], '') %}
+  {% set has_controls = control_entities_off not in (none, [], '') %}
   {{ has_sensors or has_switch or has_controls }}
 expanded_light_entities: >
   {% set target = lights %}

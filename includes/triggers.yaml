@@ -32,26 +32,20 @@
 
 - trigger: template
   value_template: >-
-    {% set controls_on = control_entities_on_var %}
     {% set controls_off = control_entities_off_var %}
-    {% set has_controls = controls_on not in (none, [], '') or controls_off not in (none, [], '') %}
-    {% set on_ok = controls_on in (none, [], '') or
-       expand(controls_on) | rejectattr('state', 'eq', 'on') | list | count == 0 %}
+    {% set has_controls = controls_off not in (none, [], '') %}
     {% set off_ok = controls_off in (none, [], '') or
        expand(controls_off) | rejectattr('state', 'eq', 'off') | list | count == 0 %}
-    {{ has_controls and on_ok and off_ok }}
+    {{ has_controls and off_ok }}
   id: control_on
 
 - trigger: template
   value_template: >-
-    {% set controls_on = control_entities_on_var %}
     {% set controls_off = control_entities_off_var %}
-    {% set has_controls = controls_on not in (none, [], '') or controls_off not in (none, [], '') %}
-    {% set on_invalid = controls_on not in (none, [], '') and
-       expand(controls_on) | selectattr('state', 'eq', 'off') | list | count > 0 %}
+    {% set has_controls = controls_off not in (none, [], '') %}
     {% set off_invalid = controls_off not in (none, [], '') and
        expand(controls_off) | selectattr('state', 'eq', 'on') | list | count > 0 %}
-    {{ has_controls and (on_invalid or off_invalid) }}
+    {{ has_controls and off_invalid }}
   id: control_off
 
 - trigger: event

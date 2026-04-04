@@ -18,7 +18,6 @@ trace:
   stored_traces: 20
 
 trigger_variables:
-  control_entities_on_var: !input control_entities_on
   control_entities_off_var: !input control_entities_off
 
 variables:
@@ -47,13 +46,10 @@ action:
                   {{ trigger.from_state is not none and trigger.from_state.state not in ['unavailable', 'unknown'] }}
                 {% endif %}
               controls_valid: >-
-                {% set controls_on = control_entities_on %}
                 {% set controls_off = control_entities_off %}
-                {% set on_ok = controls_on in (none, [], '')
-                   or expand(controls_on) | rejectattr('state', 'eq', 'on') | list | count == 0 %}
                 {% set off_ok = controls_off in (none, [], '')
                    or expand(controls_off) | rejectattr('state', 'eq', 'off') | list | count == 0 %}
-                {{ on_ok and off_ok }}
+                {{ off_ok }}
               turn_on_allowed: >-
                 {% set ls = light_sensors %}
                 {% set thr = light_threshold | float(0) %}
@@ -102,18 +98,13 @@ action:
           - condition: "{{ wait.trigger is none }}"
           - variables:
               controls_valid: >-
-                {% set controls_on = control_entities_on %}
                 {% set controls_off = control_entities_off %}
-                {% set on_ok = controls_on in (none, [], '')
-                   or expand(controls_on) | rejectattr('state', 'eq', 'on') | list | count == 0 %}
                 {% set off_ok = controls_off in (none, [], '')
                    or expand(controls_off) | rejectattr('state', 'eq', 'off') | list | count == 0 %}
-                {{ on_ok and off_ok }}
+                {{ off_ok }}
               off_conditions_still_met: >-
-                {% set controls_on = control_entities_on %}
                 {% set controls_off = control_entities_off %}
-                {% set has_controls = controls_on not in (none, [], '')
-                   or controls_off not in (none, [], '') %}
+                {% set has_controls = controls_off not in (none, [], '') %}
                 {% if trigger.id == 'control_off' %}
                   {{ has_controls and not (controls_valid | bool) }}
                 {% else %}
