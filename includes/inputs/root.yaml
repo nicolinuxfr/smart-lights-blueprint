@@ -1,0 +1,21 @@
+lights:
+  name: "[[input.lights.name]]"
+  description: "[[input.lights.description]]"
+  selector:
+    target:
+      entity:
+        domain: light
+operating_mode:
+  name: "[[input.operating_mode.name]]"
+  description: "[[input.operating_mode.description]]"
+  default: auto_onoff
+  selector:
+    select:
+      mode: list
+      options:
+        - label: "[[input.operating_mode.option.auto_onoff]]"
+          value: auto_onoff
+        - label: "[[input.operating_mode.option.adaptive]]"
+          value: adaptive
+        - label: "[[input.operating_mode.option.both]]"
+          value: both

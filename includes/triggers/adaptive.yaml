@@ -1,0 +1,41 @@
+- trigger: time_pattern
+  alias: Tick every 5 minutes
+  minutes: "/5"
+  id: tick
+
+- trigger: event
+  alias: Auto mode entity changed
+  event_type: state_changed
+  event_data:
+    entity_id: !input auto_mode_boolean
+  id: auto_mode_enabled
+
+- trigger: event
+  alias: Night mode entity changed
+  event_type: state_changed
+  event_data:
+    entity_id: !input night_mode_entity
+  id: night_mode_changed
+
+- trigger: event
+  alias: Automations reloaded
+  event_type: call_service
+  event_data:
+    domain: automation
+    service: reload
+  id: automations_reload_service
+
+- trigger: event
+  alias: Target light state changed
+  event_type: state_changed
+  id: light_state_changed
+
+- trigger: sun
+  alias: Sunrise
+  event: sunrise
+  id: sun_event
+
+- trigger: sun
+  alias: Sunset
+  event: sunset
+  id: sun_event

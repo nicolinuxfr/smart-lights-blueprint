@@ -1,0 +1,45 @@
+operating_mode: !input operating_mode
+turn_on_rule: !input turn_on_rule
+auto_mode_behavior: !input auto_mode_behavior
+lights: !input lights
+sensors: !input sensors
+switch_entity: !input switch_entity
+keep_on_open_doors: !input keep_on_open_doors
+light_sensors: !input light_sensors
+light_threshold: !input light_threshold
+control_entities_on: !input control_entities_on
+control_entities_off: !input control_entities_off
+auto_mode_input_entity: !input auto_mode_boolean
+weather_entity_id: !input weather_entity
+night_mode_entity_id: !input night_mode_entity
+b_night: !input brightness_night
+b_day: !input brightness_day
+k_night: !input kelvin_night
+k_day: !input kelvin_day
+nm_brightness: !input night_mode_brightness
+nm_kelvin: !input night_mode_kelvin
+enable_auto_onoff: "{{ operating_mode in ['auto_onoff', 'both'] }}"
+enable_adaptive: "{{ operating_mode in ['adaptive', 'both'] }}"
+restore_on_off: "{{ auto_mode_behavior in ['restore_when_all_off', 'both'] }}"
+disable_on_color: "{{ auto_mode_behavior in ['disable_on_color', 'both'] }}"
+expanded_light_entities: >
+  {% set target = lights %}
+  {% set ns = namespace(entities=[]) %}
+  {% if target.entity_id is defined %}
+    {% set ids = [target.entity_id] if target.entity_id is string else target.entity_id %}
+    {% set expanded_ids = expand(ids) | map(attribute='entity_id') | select('match', 'light\\.') | list %}
+    {% set ns.entities = ns.entities + (expanded_ids if (expanded_ids | count > 0) else ids) %}
+  {% endif %}
+  {% if target.area_id is defined %}
+    {% set areas = [target.area_id] if target.area_id is string else target.area_id %}
+    {% for a in areas %}
+      {% set ns.entities = ns.entities + (area_entities(a) | select('match', 'light\\.') | list) %}
+    {% endfor %}
+  {% endif %}
+  {% if target.device_id is defined %}
+    {% set devices = [target.device_id] if target.device_id is string else target.device_id %}
+    {% for d in devices %}
+      {% set ns.entities = ns.entities + (device_entities(d) | select('match', 'light\\.') | list) %}
+    {% endfor %}
+  {% endif %}
+  {{ ns.entities | unique | list }}

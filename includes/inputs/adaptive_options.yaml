@@ -1,0 +1,69 @@
+adaptive_options_section:
+  name: "[[section.adaptive.options]]"
+  icon: mdi:tune-vertical
+  description: "[[section.adaptive.options.description]]"
+  collapsed: true
+  input:
+    auto_mode_boolean:
+      name: "[[input.auto_mode_boolean.name]]"
+      description: "[[input.auto_mode_boolean.description]]"
+      default: ""
+      selector:
+        entity:
+          filter:
+            - domain: input_boolean
+            - domain: binary_sensor
+    auto_mode_behavior:
+      name: "[[input.auto_mode_behavior.name]]"
+      description: "[[input.auto_mode_behavior.description]]"
+      default: manual
+      selector:
+        select:
+          mode: list
+          options:
+            - label: "[[input.auto_mode_behavior.option.manual]]"
+              value: manual
+            - label: "[[input.auto_mode_behavior.option.restore_when_all_off]]"
+              value: restore_when_all_off
+            - label: "[[input.auto_mode_behavior.option.disable_on_color]]"
+              value: disable_on_color
+            - label: "[[input.auto_mode_behavior.option.both]]"
+              value: both
+    weather_entity:
+      name: "[[input.weather_entity.name]]"
+      description: "[[input.weather_entity.description]]"
+      default: ""
+      selector:
+        entity:
+          domain: weather
+    night_mode_entity:
+      name: "[[input.night_mode_entity.name]]"
+      description: "[[input.night_mode_entity.description]]"
+      default: ""
+      selector:
+        entity:
+          filter:
+            - domain: input_boolean
+            - domain: binary_sensor
+    night_mode_brightness:
+      name: "[[input.night_mode_brightness.name]]"
+      description: "[[input.night_mode_brightness.description]]"
+      default: 20
+      selector:
+        number:
+          min: 1
+          max: 100
+          step: 1
+          mode: slider
+          unit_of_measurement: "%"
+    night_mode_kelvin:
+      name: "[[input.night_mode_kelvin.name]]"
+      description: "[[input.night_mode_kelvin.description]]"
+      default: 2200
+      selector:
+        number:
+          min: 1800
+          max: 5000
+          step: 50
+          mode: slider
+          unit_of_measurement: K

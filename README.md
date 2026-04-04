@@ -1,6 +1,6 @@
 # Smart Lights Blueprint
 
-Automatically turn lights on and off based on binary sensors (motion sensors, door sensors, etc.), with optional adaptive lighting that adjusts brightness and color temperature based on the sun position.
+Control one or more lights with a single blueprint. It can run sensor-based automatic on/off, adaptive lighting, or both at the same time.
 
 [Lire en français](README.fr.md)
 
@@ -10,103 +10,84 @@ Automatically turn lights on and off based on binary sensors (motion sensors, do
 
 Or copy this URL manually:
 
-```
+```text
 https://raw.githubusercontent.com/nicolinuxfr/smart-lights-blueprint/gh-pages/en/smart_lights.yaml
 ```
 
+## Quick start
+
+1. Select the target **Lights**.
+2. Choose the **Operating mode**:
+   - **Automatic on/off only**
+   - **Adaptive lighting only**
+   - **Automatic on/off + adaptive lighting**
+3. Fill only the sections that match that mode.
+
 ## Configuration
 
-| Input | Description | Required | Default |
-|-------|-------------|----------|---------|
-| **Lights** | The lights to control | Yes | — |
-| **Enable automatic on/off** | Turn lights on and off based on sensors and switches | No | On |
-| **Enable adaptive lighting** | Adjust brightness and color temperature based on the sun | No | Off |
-
-### Auto on/off – Sensors and delay
+### Root inputs
 
 | Input | Description | Default |
 |-------|-------------|---------|
-| **Sensors** | Binary sensors that trigger the lights (motion, door/window, etc.) | — |
-| **Switch** | An `input_boolean` used as a toggle for the lights, typically flipped by another automation. Turning it off turns the lights off immediately | — |
-| **Turn off delay** | Time to wait before turning off the lights after sensors become inactive | 00:02:00 |
+| **Lights** | Lights, devices, or areas to control | — |
+| **Operating mode** | Choose auto on/off, adaptive-only, or both | `auto_onoff` |
 
-### Auto on/off – Lighting conditions
-
-| Input | Description | Default |
-|-------|-------------|---------|
-| **Night only** | Only turn on lights when the sun is below the horizon | Off |
-| **Luminosity sensors** | Illuminance sensors to check before turning on (average is used if multiple) | — |
-| **Luminosity threshold** | Lights turn on only if average luminosity is below this value | 30 lx |
-
-### Auto on/off – Advanced
+### Auto on/off – Basics
 
 | Input | Description | Default |
 |-------|-------------|---------|
-| **Keep lights on with open doors** | Open door/window sensors prevent lights from turning off | Off |
-| **Control switches that must be on** | `input_boolean` entities that must be on for the automation to work | — |
-| **Control switches that must be off** | `input_boolean` entities that must be off for the automation to work | — |
+| **Sensors** | Binary sensors used for automatic on/off | `[]` |
+| **Turn off delay** | Delay before lights turn off after sensors go inactive | `00:02:00` |
 
-### Adaptive lighting – Brightness and color
-
-| Input | Description | Default |
-|-------|-------------|---------|
-| **Minimum brightness** | Brightness at the beginning and end of the day | 30% |
-| **Maximum brightness** | Brightness in the middle of the day | 100% |
-| **Minimum temperature** | White temperature at the beginning and end of the day | 2700 K |
-| **Maximum temperature** | White temperature in the middle of the day | 5500 K |
-
-### Adaptive lighting – Advanced
+### Auto on/off – Options
 
 | Input | Description | Default |
 |-------|-------------|---------|
-| **Automatic adaptation control** | An `input_boolean` or `binary_sensor` that controls lighting adaptations | — |
-| **Automatic re-activation** | Re-enable the control entity when all lights turn off. Requires the control entity to be an `input_boolean` | Off |
-| **Automatic deactivation on color** | Disable the control entity when a light switches to color mode. Requires the control entity to be an `input_boolean` | Off |
-| **Weather-based variation** | A weather entity to adjust settings based on weather conditions | — |
+| **Switch entity** | Optional `input_boolean` used as an external toggle that always turns the managed lights on or off immediately | `""` |
+| **Turn-on rule** | Allow sensor-based turn-on always, only at night, only in low lux, or either night/low lux | `always` |
+| **Illuminance sensors** | Sensors used by the low-lux rules | `[]` |
+| **Illuminance threshold** | Average lux must be below this value when a low-lux rule is selected | `30 lx` |
+| **Keep lights on with open doors** | Open door/window sensors keep lights on | `false` |
+| **Control switches that must be on** | `input_boolean` entities that must stay on for auto on/off to run | `[]` |
+| **Control switches that must be off** | `input_boolean` entities that must stay off for auto on/off to run | `[]` |
 
-### Adaptive lighting – Night mode
+### Adaptive – Brightness and color
 
 | Input | Description | Default |
 |-------|-------------|---------|
-| **Night mode** | An `input_boolean` or `binary_sensor` that activates night mode | — |
-| **Night brightness** | Fixed brightness when night mode is active | 20% |
-| **Night temperature** | Fixed white temperature when night mode is active | 2200 K |
+| **Minimum brightness** | Brightness around sunrise and sunset | `30%` |
+| **Maximum brightness** | Brightness around midday | `100%` |
+| **Minimum temperature** | Warmest white temperature around sunrise and sunset | `2700 K` |
+| **Maximum temperature** | Coolest white temperature around midday | `5500 K` |
 
-## How it works
+### Adaptive – Options
 
-### Automatic on/off
+| Input | Description | Default |
+|-------|-------------|---------|
+| **Adaptive control entity** | Optional `input_boolean` or `binary_sensor` that enables adaptive updates | `""` |
+| **Adaptive control behavior** | Optional extra behavior for that control entity | `manual` |
+| **Weather entity** | Optional weather entity used to shift adaptive values | `""` |
+| **Night mode entity** | Optional `input_boolean` or `binary_sensor` that activates fixed night values | `""` |
+| **Night brightness** | Fixed brightness while night mode is active | `20%` |
+| **Night temperature** | Fixed white temperature while night mode is active | `2200 K` |
 
-1. When any selected sensor becomes active (motion detected, door opened, etc.), the lights turn on.
-2. When all sensors become inactive, the blueprint waits for the configured delay before turning off the lights.
-3. If a sensor becomes active again during the delay, the timer resets and the lights stay on.
-4. The optional **switch** input uses an `input_boolean` as a toggle for the lights. You can flip it from another automation, for example when a physical switch or button is pressed. Turning it off always turns the lights off immediately.
-5. By default, open door/window sensors do not prevent the lights from turning off — only motion/presence sensors are checked.
+## Modes
 
-#### Lighting conditions
+- **Automatic on/off only**: the blueprint reacts to sensors and optional control entities, but does not change brightness or color temperature adaptively.
+- **Adaptive lighting only**: the blueprint tracks managed light state changes and refreshes adaptive values while lights are on, without using sensors for on/off.
+- **Automatic on/off + adaptive lighting**: sensor-based on/off and adaptive updates are both active.
 
-The lighting conditions only affect **turning on** the lights, whether the trigger comes from sensors or from the optional switch. Turning off always works regardless of sun or luminosity.
+## Turn-on rules
 
-- **Night only**: lights turn on only when the sun is below the horizon, using the built-in Home Assistant `sun.sun` entity.
-- **Luminosity sensors + threshold**: lights turn on only when the average luminosity is below the threshold.
-- **Both enabled**: lights turn on if **either** condition is met (night OR low luminosity).
-- **Neither enabled**: lights always turn on when a sensor triggers.
+These rules apply only to sensor-based turn-on. The optional switch entity bypasses them and always toggles the lights immediately. It also bypasses the control switches below.
 
-#### Control switches
+- **Always**: sensor-based turn-on is always allowed.
+- **Night only**: sensor-based turn-on is allowed only when `sun.sun` is below the horizon.
+- **Low illuminance only**: sensor-based turn-on is allowed only when the average of the selected illuminance sensors is below the threshold.
+- **Night OR low illuminance**: sensor-based turn-on is allowed when either of the two conditions is true.
 
-If one or more **control switches that must be on** are configured, all of them must be on for the automation to work.
+## Notes
 
-If one or more **control switches that must be off** are configured, all of them must be off for the automation to work.
-
-When any configured control condition becomes invalid, the lights turn off after the configured delay. When all configured control conditions become valid again, the automation resumes immediately.
-
-### Adaptive lighting
-
-When enabled, the blueprint adjusts brightness and color temperature throughout the day based on the sun's position:
-
-- **Morning/evening**: lower brightness, warm white (2700 K by default).
-- **Midday**: maximum brightness, cooler white (5500 K by default).
-- **Night**: if night mode is active, fixed low brightness and very warm white.
-- **Weather**: optionally adjusts brightness and color temperature based on weather conditions (cloudy, rainy, etc.).
-
-Adaptive values are applied when lights turn on and updated every 5 minutes while lights remain on.
-Light state changes are also tracked correctly when the target lights are selected via entities, devices, or areas.
+- Adaptive values are applied when a managed light turns on and refreshed every 5 minutes while compatible target lights remain on.
+- The blueprint keeps working when lights are selected via entities, devices, or areas.
+- **Restore when all lights are off** and **Disable on color mode** only take effect when the adaptive control entity is an `input_boolean`.

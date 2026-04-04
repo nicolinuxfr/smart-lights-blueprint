@@ -1,0 +1,23 @@
+auto_onoff_basics_section:
+  name: "[[section.auto_onoff.basics]]"
+  icon: mdi:motion-sensor
+  description: "[[section.auto_onoff.basics.description]]"
+  collapsed: false
+  input:
+    sensors:
+      name: "[[input.sensors.name]]"
+      description: "[[input.sensors.description]]"
+      default: []
+      selector:
+        entity:
+          domain: binary_sensor
+          multiple: true
+    off_delay:
+      name: "[[input.off_delay.name]]"
+      description: "[[input.off_delay.description]]"
+      default:
+        hours: 0
+        minutes: 2
+        seconds: 0
+      selector:
+        duration:

@@ -1,0 +1,70 @@
+auto_onoff_options_section:
+  name: "[[section.auto_onoff.options]]"
+  icon: mdi:tune
+  description: "[[section.auto_onoff.options.description]]"
+  collapsed: true
+  input:
+    switch_entity:
+      name: "[[input.switch_entity.name]]"
+      description: "[[input.switch_entity.description]]"
+      default: ""
+      selector:
+        entity:
+          domain: input_boolean
+    turn_on_rule:
+      name: "[[input.turn_on_rule.name]]"
+      description: "[[input.turn_on_rule.description]]"
+      default: always
+      selector:
+        select:
+          mode: list
+          options:
+            - label: "[[input.turn_on_rule.option.always]]"
+              value: always
+            - label: "[[input.turn_on_rule.option.night]]"
+              value: night
+            - label: "[[input.turn_on_rule.option.low_lux]]"
+              value: low_lux
+            - label: "[[input.turn_on_rule.option.night_or_low_lux]]"
+              value: night_or_low_lux
+    light_sensors:
+      name: "[[input.light_sensors.name]]"
+      description: "[[input.light_sensors.description]]"
+      default: []
+      selector:
+        entity:
+          domain: sensor
+          device_class: illuminance
+          multiple: true
+    light_threshold:
+      name: "[[input.light_threshold.name]]"
+      description: "[[input.light_threshold.description]]"
+      default: 30
+      selector:
+        number:
+          min: 0
+          max: 1000
+          unit_of_measurement: lx
+          mode: box
+    keep_on_open_doors:
+      name: "[[input.keep_on_open_doors.name]]"
+      description: "[[input.keep_on_open_doors.description]]"
+      default: false
+      selector:
+        boolean:
+    control_entities_on:
+      name: "[[input.control_entities_on.name]]"
+      description: "[[input.control_entities_on.description]]"
+      default: []
+      selector:
+        entity:
+          domain: input_boolean
+          multiple: true
+    control_entities_off:
+      name: "[[input.control_entities_off.name]]"
+      description: "[[input.control_entities_off.description]]"
+      default: []
+      selector:
+        entity:
+          domain: input_boolean
+          multiple: true

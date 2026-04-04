@@ -1,5 +1,5 @@
 - conditions:
-    - "{{ supports_brightness and supports_ct }}"
+    - "{{ (supports_brightness | bool) and (supports_ct | bool) }}"
   sequence:
     - action: light.turn_on
       continue_on_error: true
@@ -10,7 +10,7 @@
         brightness_pct: "{{ effective_brightness | int(0) }}"
         color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
 - conditions:
-    - "{{ supports_brightness }}"
+    - "{{ supports_brightness | bool }}"
   sequence:
     - action: light.turn_on
       continue_on_error: true
@@ -20,7 +20,7 @@
         transition: 1
         brightness_pct: "{{ effective_brightness | int(0) }}"
 - conditions:
-    - "{{ supports_ct }}"
+    - "{{ supports_ct | bool }}"
   sequence:
     - action: light.turn_on
       continue_on_error: true

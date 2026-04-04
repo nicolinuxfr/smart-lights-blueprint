@@ -1,0 +1,18 @@
+- condition: template
+  value_template: >
+    {% set event = trigger.event.data if trigger.event is defined and trigger.event.data is defined else none %}
+    {% set restore_scenario = (restore_on_off | bool)
+       and trigger.id == 'light_state_changed'
+       and event is not none
+       and event.entity_id is defined
+       and event.entity_id in expanded_light_entities
+       and event.new_state is not none
+       and auto_mode_input_entity not in ['', none]
+       and auto_mode_input_entity.startswith('input_boolean.')
+       and is_state(auto_mode_input_entity, 'off')
+       and event.new_state.state == 'off'
+       and (expand(expanded_light_entities) | selectattr('state', 'eq', 'on') | list | count) == 0 %}
+    {{ trigger.id not in ['tick', 'sun_event', 'auto_mode_enabled', 'night_mode_changed', 'automations_reload_service', 'light_state_changed']
+       or auto_mode_input_entity in ['', none]
+       or is_state(auto_mode_input_entity, 'on')
+       or restore_scenario }}

@@ -1,0 +1,2 @@
+control_entities_on_var: !input control_entities_on
+control_entities_off_var: !input control_entities_off

@@ -1,8 +1,9 @@
 # Blueprint Smart Lights
 
-Allume et éteint automatiquement des lumières en fonction de capteurs binaires (capteurs de mouvement, capteurs d'ouverture, etc.), avec un éclairage adaptatif optionnel qui ajuste la luminosité et la température de couleur en fonction de la position du soleil.
+Contrôlez une ou plusieurs lumières avec un seul blueprint. Il peut gérer l'allumage/extinction automatique par capteurs, l'éclairage adaptatif, ou les deux en même temps.
 
 [Read in English](README.md)
+
 
 ## Installation
 
@@ -10,103 +11,84 @@ Allume et éteint automatiquement des lumières en fonction de capteurs binaires
 
 Ou copiez cette URL manuellement :
 
-```
+```text
 https://raw.githubusercontent.com/nicolinuxfr/smart-lights-blueprint/gh-pages/fr/smart_lights.yaml
 ```
 
+## Démarrage rapide
+
+1. Sélectionnez les **Lumières** cibles.
+2. Choisissez le **Mode de fonctionnement** :
+   - **Allumage/extinction automatique uniquement**
+   - **Éclairage adaptatif uniquement**
+   - **Allumage/extinction automatique + éclairage adaptatif**
+3. Renseignez uniquement les sections utiles pour ce mode.
+
 ## Configuration
 
-| Paramètre | Description | Requis | Défaut |
-|-----------|-------------|--------|--------|
-| **Lumières** | Les lumières à contrôler | Oui | — |
-| **Activer l'allumage/extinction auto** | Allume et éteint les lumières en fonction des capteurs et interrupteurs | Non | Activé |
-| **Activer l'éclairage adaptatif** | Ajuste la luminosité et la température de couleur en fonction du soleil | Non | Désactivé |
-
-### Allumage auto – Capteurs et délai
+### Paramètres racine
 
 | Paramètre | Description | Défaut |
 |-----------|-------------|--------|
-| **Capteurs** | Capteurs binaires qui déclenchent les lumières (mouvement, ouverture de porte/fenêtre, etc.) | — |
-| **Interrupteur** | Un `input_boolean` utilisé comme toggle pour les lumières, généralement basculé par une autre automatisation. Le désactiver éteint immédiatement les lumières | — |
-| **Délai d'extinction** | Temps à attendre avant d'éteindre les lumières après que les capteurs sont devenus inactifs | 00:02:00 |
+| **Lumières** | Lumières, appareils ou zones à contrôler | — |
+| **Mode de fonctionnement** | Choisit l'allumage/extinction automatique, l'adaptatif seul, ou les deux | `auto_onoff` |
 
-### Allumage auto – Conditions d'éclairage
-
-| Paramètre | Description | Défaut |
-|-----------|-------------|--------|
-| **Uniquement la nuit** | N'allume les lumières que lorsque le soleil est couché | Désactivé |
-| **Capteurs de luminosité** | Capteurs d'éclairement à vérifier avant l'allumage (moyenne si plusieurs) | — |
-| **Seuil de luminosité** | Les lumières ne s'allument que si la luminosité moyenne est inférieure à cette valeur | 30 lx |
-
-### Allumage auto – Avancé
+### Allumage auto – Essentiel
 
 | Paramètre | Description | Défaut |
 |-----------|-------------|--------|
-| **Maintenir avec portes ouvertes** | Les capteurs de porte/fenêtre ouverts empêchent l'extinction | Désactivé |
-| **Interrupteurs de contrôle devant être activés** | Des `input_boolean` qui doivent être activés pour que l'automatisation fonctionne | — |
-| **Interrupteurs de contrôle devant être désactivés** | Des `input_boolean` qui doivent être désactivés pour que l'automatisation fonctionne | — |
+| **Capteurs** | Capteurs binaires utilisés pour l'allumage/extinction automatique | `[]` |
+| **Délai d'extinction** | Délai avant extinction après l'inactivité des capteurs | `00:02:00` |
 
-### Éclairage adaptatif – Luminosité et couleur
-
-| Paramètre | Description | Défaut |
-|-----------|-------------|--------|
-| **Luminosité minimale** | Luminosité en début et fin de journée | 30 % |
-| **Luminosité maximale** | Luminosité au milieu de la journée | 100 % |
-| **Température minimale** | Température du blanc en début et fin de journée | 2700 K |
-| **Température maximale** | Température du blanc au milieu de la journée | 5500 K |
-
-### Éclairage adaptatif – Avancé
+### Allumage auto – Options
 
 | Paramètre | Description | Défaut |
 |-----------|-------------|--------|
-| **Contrôle de l'adaptation** | Un `input_boolean` ou `binary_sensor` qui contrôle les adaptations | — |
-| **Réactivation automatique** | Réactive l'entité de contrôle quand toutes les lumières s'éteignent. Nécessite un `input_boolean` | Désactivé |
-| **Désactivation sur couleur** | Désactive l'entité de contrôle quand une lumière passe en couleur. Nécessite un `input_boolean` | Désactivé |
-| **Variation météo** | Entité météo pour ajuster les paramètres selon les conditions climatiques | — |
+| **Entité interrupteur** | `input_boolean` optionnel utilisé comme interrupteur externe qui allume ou éteint toujours immédiatement les lumières gérées | `""` |
+| **Règle d'allumage** | Autoriser l'allumage via capteur toujours, la nuit, sur faible luminosité, ou l'un des deux | `always` |
+| **Capteurs de luminosité** | Capteurs utilisés par les règles de faible luminosité | `[]` |
+| **Seuil de luminosité** | La luminosité moyenne doit être inférieure à cette valeur quand une règle lux est choisie | `30 lx` |
+| **Maintenir les lumières avec portes ouvertes** | Les capteurs de porte/fenêtre ouverts maintiennent les lumières allumées | `false` |
+| **Interrupteurs de contrôle devant être activés** | Entités `input_boolean` devant rester activées pour l'allumage/extinction auto | `[]` |
+| **Interrupteurs de contrôle devant être désactivés** | Entités `input_boolean` devant rester désactivées pour l'allumage/extinction auto | `[]` |
 
-### Éclairage adaptatif – Mode nuit
+### Adaptatif – Luminosité et couleur
 
 | Paramètre | Description | Défaut |
 |-----------|-------------|--------|
-| **Mode nuit** | Un `input_boolean` ou `binary_sensor` qui active le mode nuit | — |
-| **Luminosité nuit** | Luminosité fixe quand le mode nuit est actif | 20 % |
-| **Température nuit** | Température du blanc fixe quand le mode nuit est actif | 2200 K |
+| **Luminosité minimale** | Luminosité autour du lever et du coucher du soleil | `30 %` |
+| **Luminosité maximale** | Luminosité autour du milieu de journée | `100 %` |
+| **Température minimale** | Température de blanc la plus chaude autour du lever et du coucher du soleil | `2700 K` |
+| **Température maximale** | Température de blanc la plus froide autour du milieu de journée | `5500 K` |
 
-## Fonctionnement
+### Adaptatif – Options
 
-### Allumage et extinction automatiques
+| Paramètre | Description | Défaut |
+|-----------|-------------|--------|
+| **Entité de contrôle adaptatif** | `input_boolean` ou `binary_sensor` optionnel qui autorise les mises à jour adaptatives | `""` |
+| **Comportement du contrôle adaptatif** | Comportement optionnel appliqué à cette entité de contrôle | `manual` |
+| **Entité météo** | Entité météo optionnelle utilisée pour décaler les valeurs adaptatives | `""` |
+| **Entité de mode nuit** | `input_boolean` ou `binary_sensor` optionnel qui active des valeurs fixes de nuit | `""` |
+| **Luminosité nuit** | Luminosité fixe pendant le mode nuit | `20 %` |
+| **Température nuit** | Température de blanc fixe pendant le mode nuit | `2200 K` |
 
-1. Quand un capteur sélectionné devient actif (mouvement détecté, porte ouverte, etc.), les lumières s'allument.
-2. Quand tous les capteurs deviennent inactifs, le blueprint attend le délai configuré avant d'éteindre les lumières.
-3. Si un capteur redevient actif pendant le délai, le minuteur se réinitialise et les lumières restent allumées.
-4. L'entrée **interrupteur** optionnelle utilise un `input_boolean` comme toggle pour les lumières. Vous pouvez le basculer depuis une autre automatisation, par exemple lors de l'appui sur un interrupteur ou bouton physique. Le désactiver éteint toujours les lumières immédiatement.
-5. Par défaut, les capteurs de porte/fenêtre restés ouverts n'empêchent pas l'extinction — seuls les capteurs de mouvement/présence sont vérifiés.
+## Modes
 
-#### Conditions d'éclairage
+- **Allumage/extinction automatique uniquement** : le blueprint réagit aux capteurs et aux entités de contrôle optionnelles, sans ajustement adaptatif de la luminosité ou de la température.
+- **Éclairage adaptatif uniquement** : le blueprint suit les changements d'état des lumières gérées et rafraîchit les valeurs adaptatives pendant qu'elles restent allumées, sans utiliser les capteurs pour l'allumage/extinction.
+- **Allumage/extinction automatique + éclairage adaptatif** : l'allumage/extinction par capteurs et les mises à jour adaptatives sont tous deux actifs.
 
-Les conditions d'éclairage n'affectent que l'**allumage** des lumières, que le déclenchement vienne des capteurs ou de l'interrupteur optionnel. L'extinction fonctionne toujours, indépendamment du soleil ou de la luminosité.
+## Règles d'allumage
 
-- **Uniquement la nuit** : les lumières ne s'allument que quand le soleil est couché, en utilisant l'entité `sun.sun` intégrée à Home Assistant.
-- **Capteurs de luminosité + seuil** : les lumières ne s'allument que si la luminosité moyenne est inférieure au seuil.
-- **Les deux activés** : les lumières s'allument si **l'une ou l'autre** des conditions est remplie (nuit OU faible luminosité).
-- **Aucune condition** : les lumières s'allument toujours quand un capteur se déclenche.
+Ces règles s'appliquent uniquement à l'allumage via capteur. L'entité interrupteur optionnelle les contourne et bascule toujours les lumières immédiatement. Elle contourne aussi les interrupteurs de contrôle ci-dessous.
 
-#### Interrupteurs de contrôle
+- **Toujours** : l'allumage via capteur est toujours autorisé.
+- **Nuit uniquement** : l'allumage via capteur n'est autorisé que lorsque `sun.sun` est sous l'horizon.
+- **Faible luminosité uniquement** : l'allumage via capteur n'est autorisé que lorsque la moyenne des capteurs de luminosité sélectionnés est sous le seuil.
+- **Nuit OU faible luminosité** : l'allumage via capteur est autorisé dès qu'une des deux conditions est vraie.
 
-Si un ou plusieurs **interrupteurs de contrôle devant être activés** sont configurés, ils doivent tous être activés pour que l'automatisation fonctionne.
+## Notes
 
-Si un ou plusieurs **interrupteurs de contrôle devant être désactivés** sont configurés, ils doivent tous être désactivés pour que l'automatisation fonctionne.
-
-Quand l'une des conditions de contrôle configurées devient invalide, les lumières s'éteignent après le délai configuré. Quand toutes les conditions redeviennent valides, l'automatisation reprend immédiatement.
-
-### Éclairage adaptatif
-
-Quand cette option est activée, le blueprint ajuste la luminosité et la température de couleur tout au long de la journée en fonction de la position du soleil :
-
-- **Matin/soir** : luminosité réduite, blanc chaud (2700 K par défaut).
-- **Midi** : luminosité maximale, blanc plus froid (5500 K par défaut).
-- **Nuit** : si le mode nuit est actif, luminosité basse fixe et blanc très chaud.
-- **Météo** : ajuste optionnellement la luminosité et la température en fonction des conditions météo (nuageux, pluvieux, etc.).
-
-Les valeurs adaptatives sont appliquées à l'allumage des lumières et mises à jour toutes les 5 minutes tant que les lumières restent allumées.
-Les changements d'état des lumières sont aussi bien suivis quand les cibles sont sélectionnées via des entités, des appareils ou des zones.
+- Les valeurs adaptatives sont appliquées lorsqu'une lumière gérée s'allume puis rafraîchies toutes les 5 minutes tant que des lumières compatibles restent allumées.
+- Le blueprint continue de fonctionner quand les lumières sont sélectionnées via des entités, des appareils ou des zones.
+- **Réactiver quand tout est éteint** et **Désactiver sur mode couleur** ne prennent effet que si l'entité de contrôle adaptatif est un `input_boolean`.
