@@ -43,7 +43,8 @@ https://raw.githubusercontent.com/nicolinuxfr/smart-lights-blueprint/gh-pages/fr
 | Paramètre | Description | Défaut |
 |-----------|-------------|--------|
 | **Maintenir avec portes ouvertes** | Les capteurs de porte/fenêtre ouverts empêchent l'extinction | Désactivé |
-| **Interrupteurs de contrôle** | Des `input_boolean` qui activent/désactivent l'automatisation (tous doivent être activés) | — |
+| **Interrupteurs de contrôle devant être activés** | Des `input_boolean` qui doivent être activés pour que l'automatisation fonctionne | — |
+| **Interrupteurs de contrôle devant être désactivés** | Des `input_boolean` qui doivent être désactivés pour que l'automatisation fonctionne | — |
 
 ### Éclairage adaptatif – Luminosité et couleur
 
@@ -92,7 +93,11 @@ Les conditions d'éclairage n'affectent que l'**allumage** des lumières, que le
 
 #### Interrupteurs de contrôle
 
-Si un ou plusieurs **interrupteurs de contrôle** sont configurés, ils doivent tous être activés pour que l'automatisation fonctionne. Quand un interrupteur est désactivé, les lumières s'éteignent après le délai configuré. Quand tous les interrupteurs sont réactivés, l'automatisation reprend immédiatement.
+Si un ou plusieurs **interrupteurs de contrôle devant être activés** sont configurés, ils doivent tous être activés pour que l'automatisation fonctionne.
+
+Si un ou plusieurs **interrupteurs de contrôle devant être désactivés** sont configurés, ils doivent tous être désactivés pour que l'automatisation fonctionne.
+
+Quand l'une des conditions de contrôle configurées devient invalide, les lumières s'éteignent après le délai configuré. Quand toutes les conditions redeviennent valides, l'automatisation reprend immédiatement.
 
 ### Éclairage adaptatif
 

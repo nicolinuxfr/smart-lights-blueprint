@@ -104,9 +104,17 @@ blueprint:
           default: false
           selector:
             boolean:
-        control_entities:
-          name: "[[input.control_entities.name]]"
-          description: "[[input.control_entities.description]]"
+        control_entities_on:
+          name: "[[input.control_entities_on.name]]"
+          description: "[[input.control_entities_on.description]]"
+          default: []
+          selector:
+            entity:
+              domain: input_boolean
+              multiple: true
+        control_entities_off:
+          name: "[[input.control_entities_off.name]]"
+          description: "[[input.control_entities_off.description]]"
           default: []
           selector:
             entity:
@@ -242,14 +250,16 @@ max: 10
 max_exceeded: silent
 
 trigger_variables:
-  control_var: !input control_entities
+  control_entities_on_var: !input control_entities_on
+  control_entities_off_var: !input control_entities_off
 
 variables:
   # Feature flags
   enable_auto_onoff: !input enable_auto_onoff
   enable_adaptive: !input enable_adaptive
   # Auto on/off variables
-  control_entities: !input control_entities
+  control_entities_on: !input control_entities_on
+  control_entities_off: !input control_entities_off
   sensors: !input sensors
   switch_entity: !input switch_entity
   keep_on_open_doors: !input keep_on_open_doors
@@ -327,14 +337,26 @@ trigger:
 
   - trigger: template
     value_template: >-
-      {{ control_var not in (none, [], '') and
-         expand(control_var) | rejectattr('state', 'eq', 'on') | list | count == 0 }}
+      {% set controls_on = control_entities_on_var %}
+      {% set controls_off = control_entities_off_var %}
+      {% set has_controls = controls_on not in (none, [], '') or controls_off not in (none, [], '') %}
+      {% set on_ok = controls_on in (none, [], '') or
+         expand(controls_on) | rejectattr('state', 'eq', 'on') | list | count == 0 %}
+      {% set off_ok = controls_off in (none, [], '') or
+         expand(controls_off) | rejectattr('state', 'eq', 'off') | list | count == 0 %}
+      {{ has_controls and on_ok and off_ok }}
     id: control_on
 
   - trigger: template
     value_template: >-
-      {{ control_var not in (none, [], '') and
-         expand(control_var) | selectattr('state', 'eq', 'off') | list | count > 0 }}
+      {% set controls_on = control_entities_on_var %}
+      {% set controls_off = control_entities_off_var %}
+      {% set has_controls = controls_on not in (none, [], '') or controls_off not in (none, [], '') %}
+      {% set on_invalid = controls_on not in (none, [], '') and
+         expand(controls_on) | selectattr('state', 'eq', 'off') | list | count > 0 %}
+      {% set off_invalid = controls_off not in (none, [], '') and
+         expand(controls_off) | selectattr('state', 'eq', 'on') | list | count > 0 %}
+      {{ has_controls and (on_invalid or off_invalid) }}
     id: control_off
 
   - trigger: event
@@ -488,8 +510,13 @@ action:
               {{ trigger.from_state.state not in ['unavailable', 'unknown'] }}
             {% endif %}
           - >-
-            {{ control_entities in (none, [], '') or
-               expand(control_entities) | rejectattr('state', 'eq', 'on') | list | count == 0 }}
+            {% set controls_on = control_entities_on %}
+            {% set controls_off = control_entities_off %}
+            {% set on_ok = controls_on in (none, [], '') or
+               expand(controls_on) | rejectattr('state', 'eq', 'on') | list | count == 0 %}
+            {% set off_ok = controls_off in (none, [], '') or
+               expand(controls_off) | rejectattr('state', 'eq', 'off') | list | count == 0 %}
+            {{ on_ok and off_ok }}
           - >-
             {% set ls = light_sensors %}
             {% set thr = light_threshold | float(0) %}
@@ -538,11 +565,17 @@ action:
             continue_on_timeout: true
           - condition: "{{ wait.trigger is none }}"
           - condition: >-
-              {% set controls_all_on = control_entities in (none, [], '') or
-                 expand(control_entities) | rejectattr('state', 'eq', 'on') | list | count == 0 %}
-              {% set controls_still_disabled = control_entities not in (none, [], '') and
-                 expand(control_entities) | selectattr('state', 'eq', 'off') | list | count > 0 %}
-              {{ controls_still_disabled if trigger.id == 'control_off' else controls_all_on }}
+              {% set controls_on = control_entities_on %}
+              {% set controls_off = control_entities_off %}
+              {% set has_controls = controls_on not in (none, [], '') or controls_off not in (none, [], '') %}
+              {% set controls_valid = (
+                 controls_on in (none, [], '') or
+                 expand(controls_on) | rejectattr('state', 'eq', 'on') | list | count == 0
+              ) and (
+                 controls_off in (none, [], '') or
+                 expand(controls_off) | rejectattr('state', 'eq', 'off') | list | count == 0
+              ) %}
+              {{ (has_controls and not controls_valid) if trigger.id == 'control_off' else controls_valid }}
           - condition: >-
               {% if not keep_on_open_doors %}
                 {{ expand(sensors)
@@ -583,8 +616,13 @@ action:
                 target: !input lights
             else:
               - condition: >-
-                  {{ control_entities in (none, [], '') or
-                     expand(control_entities) | rejectattr('state', 'eq', 'on') | list | count == 0 }}
+                  {% set controls_on = control_entities_on %}
+                  {% set controls_off = control_entities_off %}
+                  {% set on_ok = controls_on in (none, [], '') or
+                     expand(controls_on) | rejectattr('state', 'eq', 'on') | list | count == 0 %}
+                  {% set off_ok = controls_off in (none, [], '') or
+                     expand(controls_off) | rejectattr('state', 'eq', 'off') | list | count == 0 %}
+                  {{ on_ok and off_ok }}
               - condition: >-
                   {% set ls = light_sensors %}
                   {% set thr = light_threshold | float(0) %}

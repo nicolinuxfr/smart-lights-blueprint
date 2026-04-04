@@ -43,7 +43,8 @@ https://raw.githubusercontent.com/nicolinuxfr/smart-lights-blueprint/gh-pages/en
 | Input | Description | Default |
 |-------|-------------|---------|
 | **Keep lights on with open doors** | Open door/window sensors prevent lights from turning off | Off |
-| **Control switches** | `input_boolean` entities that enable/disable the automation (all must be on) | — |
+| **Control switches that must be on** | `input_boolean` entities that must be on for the automation to work | — |
+| **Control switches that must be off** | `input_boolean` entities that must be off for the automation to work | — |
 
 ### Adaptive lighting – Brightness and color
 
@@ -92,7 +93,11 @@ The lighting conditions only affect **turning on** the lights, whether the trigg
 
 #### Control switches
 
-If one or more **control switches** are configured, all of them must be on for the automation to work. When any switch is turned off, the lights turn off after the configured delay. When all switches are back on, the automation resumes immediately.
+If one or more **control switches that must be on** are configured, all of them must be on for the automation to work.
+
+If one or more **control switches that must be off** are configured, all of them must be off for the automation to work.
+
+When any configured control condition becomes invalid, the lights turn off after the configured delay. When all configured control conditions become valid again, the automation resumes immediately.
 
 ### Adaptive lighting
 
