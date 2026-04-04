@@ -147,7 +147,156 @@ action:
         sequence:
           - variables:
               [[include:variables/switch_toggle_state.yaml]]
-          [[include:actions/switch_toggle.yaml]]
+          - condition: "{{ switch_event_valid | bool }}"
+          - if:
+              - "{{ switch_turning_off | bool }}"
+              - "{{ not (all_target_lights_off | bool) }}"
+            then:
+              - action: light.turn_off
+                target: !input lights
+            else:
+              - if:
+                  - "{{ switch_turning_on | bool }}"
+                  - "{{ not (all_target_lights_on | bool) }}"
+                then:
+                  - if:
+                      - "{{ enable_adaptive | bool }}"
+                    then:
+                      - variables:
+                          now_ts: "{{ as_timestamp(now()) }}"
+                          next_rising_ts: "{{ as_timestamp(state_attr('sun.sun', 'next_rising')) }}"
+                          next_setting_ts: "{{ as_timestamp(state_attr('sun.sun', 'next_setting')) }}"
+                          day_offset_s: 2700
+                          sunrise_ts: >
+                            {% set nr = next_rising_ts | float(0) %}
+                            {% set ns = next_setting_ts | float(0) %}
+                            {{ (nr - (86400 if nr > ns else 0)) - day_offset_s }}
+                          sunset_ts: "{{ (next_setting_ts | float(0)) + day_offset_s }}"
+                          previous_sunrise_ts: "{{ (sunrise_ts | float(0)) - 86400 }}"
+                          previous_sunset_ts: "{{ (sunset_ts | float(0)) - 86400 }}"
+                          weather_condition_state: >
+                            {% if weather_entity_id not in ['', none] %}
+                              {{ states(weather_entity_id) | lower }}
+                            {% else %}
+                              {{ '' }}
+                            {% endif %}
+                          weather_factor: >
+                            {% set c = weather_condition_state | lower %}
+                            {% if c in ['', 'unknown', 'unavailable', 'none'] %}
+                              0
+                            {% elif c in ['sunny', 'clear-night'] %}
+                              0.0
+                            {% elif c == 'partlycloudy' %}
+                              0.35
+                            {% elif c == 'windy' %}
+                              0.45
+                            {% elif c in ['windy-variant', 'cloudy'] %}
+                              0.55
+                            {% elif c == 'snowy' %}
+                              0.6
+                            {% elif c in ['snowy-rainy', 'hail'] %}
+                              0.65
+                            {% elif c == 'fog' %}
+                              0.75
+                            {% elif c == 'rainy' %}
+                              0.8
+                            {% elif c == 'pouring' %}
+                              0.85
+                            {% elif c in ['lightning', 'lightning-rainy'] %}
+                              0.9
+                            {% elif c == 'exceptional' %}
+                              0.95
+                            {% else %}
+                              0.0
+                            {% endif %}
+                          effective_brightness_curve_gamma: >
+                            {% set base = 1.2 %}
+                            {% set w = weather_factor | float(0) %}
+                            {{ [0.8, [base + (w * 0.25), 2.2] | min] | max }}
+                          daylight_progress: >
+                            {% set t = now_ts | float(0) %}
+                            {% set sr0 = sunrise_ts | float(0) %}
+                            {% set ss0 = sunset_ts | float(0) %}
+                            {% set sr_prev = previous_sunrise_ts | float(0) %}
+                            {% set ss_prev = previous_sunset_ts | float(0) %}
+                            {% if t >= sr0 and t < ss0 %}
+                              {% set d = (t - sr0) / (ss0 - sr0) %}
+                              {{ [0, [d, 1] | min] | max }}
+                            {% elif t >= sr_prev and t < ss_prev %}
+                              {% set d = (t - sr_prev) / (ss_prev - sr_prev) %}
+                              {{ [0, [d, 1] | min] | max }}
+                            {% else %}
+                              {{ none }}
+                            {% endif %}
+                          sun_position: >
+                            {% set t = now_ts | float(0) %}
+                            {% set sr0 = sunrise_ts | float(0) %}
+                            {% set ss0 = sunset_ts | float(0) %}
+                            {% set sr_prev = previous_sunrise_ts | float(0) %}
+                            {% set ss_prev = previous_sunset_ts | float(0) %}
+                            {% if t >= sr0 and t < ss0 %}
+                              {% set d = (t - sr0) / (ss0 - sr0) %}
+                              {% set d = [0, [d, 1] | min] | max %}
+                              {{ (1 - ((2 * d - 1) ** 2)) | float(0) }}
+                            {% elif t >= sr_prev and t < ss_prev %}
+                              {% set d = (t - sr_prev) / (ss_prev - sr_prev) %}
+                              {% set d = [0, [d, 1] | min] | max %}
+                              {{ (1 - ((2 * d - 1) ** 2)) | float(0) }}
+                            {% elif t < sr0 %}
+                              {% set n = (t - ss_prev) / (sr0 - ss_prev) %}
+                              {% set n = [0, [n, 1] | min] | max %}
+                              {{ (-(1 - ((2 * n - 1) ** 2))) | float(0) }}
+                            {% else %}
+                              {% set n = (t - ss0) / (sr0 + 86400 - ss0) %}
+                              {% set n = [0, [n, 1] | min] | max %}
+                              {{ (-(1 - ((2 * n - 1) ** 2))) | float(0) }}
+                            {% endif %}
+                          adaptive_curve_factor: >
+                            {% set p = sun_position | float(0) %}
+                            {% if p > 0 %}
+                              {% set s0 = p * p * p * ((p * ((6 * p) - 15)) + 10) %}
+                              {% set single = (expanded_light_entities | count) == 1 %}
+                              {% set base_curve = s0 ** (effective_brightness_curve_gamma | float(1.2)) %}
+                              {% if single and daylight_progress not in [none, 'none', ''] %}
+                                {% set day_ratio = daylight_progress | float(0) %}
+                                {% if day_ratio < 0.5 %}
+                                  {{ base_curve ** 0.78 }}
+                                {% else %}
+                                  {{ base_curve ** 0.62 }}
+                                {% endif %}
+                              {% else %}
+                                {{ base_curve }}
+                              {% endif %}
+                            {% else %}
+                              0
+                            {% endif %}
+                          weather_kelvin_offset: "{{ ((0.5 - (weather_factor | float(0))) * 900) }}"
+                          target_brightness: >
+                            {% set b_min = [b_night | float(1), b_day | float(100)] | min %}
+                            {% set b_max = [b_night | float(1), b_day | float(100)] | max %}
+                            {{ (b_min + (b_max - b_min) * (adaptive_curve_factor | float(0))) | round(0) | int }}
+                          target_kelvin: >
+                            {% set k_min = [k_night | float(2200), k_day | float(5000)] | min %}
+                            {% set k_max = [k_night | float(2200), k_day | float(5000)] | max %}
+                            {% set base = (k_min + (k_max - k_min) * (adaptive_curve_factor | float(0))) %}
+                            {% set adjusted = base + (weather_kelvin_offset | float(0)) %}
+                            {{ [k_min, [adjusted, k_max] | min] | max | round(0) | int }}
+                          night_mode_active: >
+                            {{ night_mode_entity_id not in ['', none]
+                               and is_state(night_mode_entity_id, 'on') }}
+                          effective_brightness: >
+                            {{ nm_brightness | int(20) if night_mode_active else target_brightness | int(0) }}
+                          effective_kelvin: >
+                            {{ nm_kelvin | int(2200) if night_mode_active else target_kelvin | int(0) }}
+                      - action: light.turn_on
+                        target: !input lights
+                        data:
+                          brightness_pct: "{{ effective_brightness | int(0) }}"
+                          color_temp_kelvin: "{{ effective_kelvin | int(0) }}"
+                          transition: 1
+                    else:
+                      - action: light.turn_on
+                        target: !input lights
 
       - conditions:
           - condition: trigger
