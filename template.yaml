@@ -61,21 +61,13 @@ action:
               turn_on_allowed: >-
                 {% set ls = light_sensors %}
                 {% set thr = light_threshold | float(0) %}
-                {% set rule = turn_on_rule %}
+                {% set has_night = night_only %}
                 {% set has_lux = ls not in (none, [], '') and thr > 0 %}
-                {% set night_ok = is_state('sun.sun', 'below_horizon') %}
+                {% set night_ok = has_night and is_state('sun.sun', 'below_horizon') %}
                 {% set lux_ok = has_lux and
                    (expand(ls) | map(attribute='state') | map('float', 0) | sum /
                     [expand(ls) | list | count, 1] | max) < thr %}
-                {% if rule == 'always' %}
-                  true
-                {% elif rule == 'night' %}
-                  {{ night_ok }}
-                {% elif rule == 'low_lux' %}
-                  {{ lux_ok }}
-                {% else %}
-                  {{ night_ok or lux_ok }}
-                {% endif %}
+                {{ (not has_night and not has_lux) or night_ok or lux_ok }}
           - condition: "{{ sensors_active | bool }}"
           - condition: "{{ controls_valid | bool }}"
           - condition: "{{ turn_on_allowed | bool }}"

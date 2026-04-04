@@ -5,17 +5,15 @@ lights:
     target:
       entity:
         domain: light
-operating_mode:
-  name: "[[input.operating_mode.name]]"
-  description: "[[input.operating_mode.description]]"
-  default: auto_onoff
+enable_auto_onoff:
+  name: "[[input.enable_auto_onoff.name]]"
+  description: "[[input.enable_auto_onoff.description]]"
+  default: true
   selector:
-    select:
-      mode: list
-      options:
-        - label: "[[input.operating_mode.option.auto_onoff]]"
-          value: auto_onoff
-        - label: "[[input.operating_mode.option.adaptive]]"
-          value: adaptive
-        - label: "[[input.operating_mode.option.both]]"
-          value: both
+    boolean:
+enable_adaptive:
+  name: "[[input.enable_adaptive.name]]"
+  description: "[[input.enable_adaptive.description]]"
+  default: false
+  selector:
+    boolean:

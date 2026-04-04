@@ -1,6 +1,3 @@
-operating_mode: !input operating_mode
-turn_on_rule: !input turn_on_rule
-auto_mode_behavior: !input auto_mode_behavior
 lights: !input lights
 sensors: !input sensors
 switch_entity: !input switch_entity
@@ -18,10 +15,11 @@ k_night: !input kelvin_night
 k_day: !input kelvin_day
 nm_brightness: !input night_mode_brightness
 nm_kelvin: !input night_mode_kelvin
-enable_auto_onoff: "{{ operating_mode in ['auto_onoff', 'both'] }}"
-enable_adaptive: "{{ operating_mode in ['adaptive', 'both'] }}"
-restore_on_off: "{{ auto_mode_behavior in ['restore_when_all_off', 'both'] }}"
-disable_on_color: "{{ auto_mode_behavior in ['disable_on_color', 'both'] }}"
+enable_auto_onoff: !input enable_auto_onoff
+enable_adaptive: !input enable_adaptive
+night_only: !input night_only
+restore_on_off: !input restore_on_off
+disable_on_color: !input disable_on_color
 expanded_light_entities: >
   {% set target = lights %}
   {% set ns = namespace(entities=[]) %}

@@ -13,22 +13,18 @@ adaptive_options_section:
           filter:
             - domain: input_boolean
             - domain: binary_sensor
-    auto_mode_behavior:
-      name: "[[input.auto_mode_behavior.name]]"
-      description: "[[input.auto_mode_behavior.description]]"
-      default: manual
+    restore_on_off:
+      name: "[[input.restore_on_off.name]]"
+      description: "[[input.restore_on_off.description]]"
+      default: false
       selector:
-        select:
-          mode: list
-          options:
-            - label: "[[input.auto_mode_behavior.option.manual]]"
-              value: manual
-            - label: "[[input.auto_mode_behavior.option.restore_when_all_off]]"
-              value: restore_when_all_off
-            - label: "[[input.auto_mode_behavior.option.disable_on_color]]"
-              value: disable_on_color
-            - label: "[[input.auto_mode_behavior.option.both]]"
-              value: both
+        boolean:
+    disable_on_color:
+      name: "[[input.disable_on_color.name]]"
+      description: "[[input.disable_on_color.description]]"
+      default: false
+      selector:
+        boolean:
     weather_entity:
       name: "[[input.weather_entity.name]]"
       description: "[[input.weather_entity.description]]"

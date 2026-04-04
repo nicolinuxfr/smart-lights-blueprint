@@ -11,22 +11,12 @@ auto_onoff_options_section:
       selector:
         entity:
           domain: input_boolean
-    turn_on_rule:
-      name: "[[input.turn_on_rule.name]]"
-      description: "[[input.turn_on_rule.description]]"
-      default: always
+    night_only:
+      name: "[[input.night_only.name]]"
+      description: "[[input.night_only.description]]"
+      default: false
       selector:
-        select:
-          mode: list
-          options:
-            - label: "[[input.turn_on_rule.option.always]]"
-              value: always
-            - label: "[[input.turn_on_rule.option.night]]"
-              value: night
-            - label: "[[input.turn_on_rule.option.low_lux]]"
-              value: low_lux
-            - label: "[[input.turn_on_rule.option.night_or_low_lux]]"
-              value: night_or_low_lux
+        boolean:
     light_sensors:
       name: "[[input.light_sensors.name]]"
       description: "[[input.light_sensors.description]]"
