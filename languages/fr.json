@@ -44,7 +44,7 @@
   "input.restore_on_off.name": "Réactivation automatique",
   "input.sensors.description": "Capteurs binaires qui pilotent l'allumage/extinction automatique. Laissez vide si vous utilisez uniquement l'éclairage adaptatif.",
   "input.sensors.name": "Capteurs",
-  "input.switch_entity.description": "Input_boolean optionnel utilisé comme interrupteur externe. Son activation allume immédiatement les lumières gérées et sa désactivation les éteint immédiatement. Cet interrupteur contourne les conditions d'allumage et les interrupteurs de contrôle.",
+  "input.switch_entity.description": "Input_boolean optionnel utilisé comme interrupteur externe. Son activation allume immédiatement les lumières gérées et sa désactivation les éteint immédiatement. Il reste aussi synchronisé avec les lumières gérées : il s'active quand elles sont toutes allumées et se désactive quand elles sont toutes éteintes. Cet interrupteur contourne les conditions d'allumage et les interrupteurs de contrôle.",
   "input.switch_entity.name": "Entité interrupteur",
   "input.weather_entity.description": "Entité météo optionnelle utilisée pour ajuster légèrement la luminosité et la température de blanc adaptatives.",
   "input.weather_entity.name": "Entité météo",

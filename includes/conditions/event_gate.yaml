@@ -28,12 +28,18 @@
          or event.old_state.attributes.color_mode is not defined
          or event.old_state.attributes.color_mode != event.new_state.attributes.color_mode
        ) %}
-    {% set light_turned_off_all_off = light_state_event
-       and (restore_on_off | bool)
-       and auto_mode_input_entity not in ['', none]
-       and auto_mode_input_entity.startswith('input_boolean.')
+    {% set all_target_lights_off = light_state_event
        and event.new_state.state == 'off'
        and (expand(expanded_light_entities) | selectattr('state', 'eq', 'on') | list | count) == 0 %}
+    {% set light_turned_off_all_off = all_target_lights_off
+       and (
+         switch_entity not in ['', none]
+         or (
+           (restore_on_off | bool)
+           and auto_mode_input_entity not in ['', none]
+           and auto_mode_input_entity.startswith('input_boolean.')
+         )
+       ) %}
     {{ trigger.id not in ['switch_toggled', 'auto_mode_enabled', 'night_mode_changed', 'light_state_changed']
        or switch_event
        or (

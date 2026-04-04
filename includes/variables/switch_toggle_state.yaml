@@ -1,0 +1,21 @@
+switch_event_valid: >-
+  {{ switch_entity not in ('', none)
+     and trigger.event is defined
+     and trigger.event.data is defined
+     and trigger.event.data.new_state is not none
+     and trigger.event.data.old_state is not none
+     and trigger.event.data.old_state.state not in ['unavailable', 'unknown']
+     and trigger.event.data.new_state.state not in ['unavailable', 'unknown'] }}
+switch_turning_on: >-
+  {{ (switch_event_valid | bool) and trigger.event.data.new_state.state == 'on' }}
+switch_turning_off: >-
+  {{ (switch_event_valid | bool) and trigger.event.data.new_state.state == 'off' }}
+target_lights_count: >-
+  {{ expand(expanded_light_entities) | list | count }}
+target_lights_on_count: >-
+  {{ expand(expanded_light_entities) | selectattr('state', 'eq', 'on') | list | count }}
+all_target_lights_off: >-
+  {{ (target_lights_on_count | int(0)) == 0 }}
+all_target_lights_on: >-
+  {{ (target_lights_count | int(0)) > 0
+     and (target_lights_on_count | int(0)) == (target_lights_count | int(0)) }}

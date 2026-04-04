@@ -41,7 +41,7 @@ https://raw.githubusercontent.com/nicolinuxfr/smart-lights-blueprint/gh-pages/en
 
 | Input | Description | Default |
 |-------|-------------|---------|
-| **Switch entity** | Optional `input_boolean` used as an external toggle that always turns the managed lights on or off immediately | `""` |
+| **Switch entity** | Optional `input_boolean` used as an external toggle that always turns the managed lights on or off immediately, while staying synced with their all-on/all-off state | `""` |
 | **Night only** | Allow sensor-based turn-on only when the sun is below the horizon | `false` |
 | **Illuminance sensors** | Sensors used by the low-lux rules | `[]` |
 | **Illuminance threshold** | Average lux must be below this value for the illuminance condition to allow turn-on | `30 lx` |
@@ -87,6 +87,7 @@ These conditions apply only to sensor-based turn-on. The optional switch entity 
 
 ## Notes
 
+- The optional switch entity is synchronized from the managed lights: it turns on when they are all on and turns off when they are all off, without re-triggering redundant light commands.
 - Adaptive values are applied when a managed light turns on and refreshed every 5 minutes while compatible target lights remain on.
 - The blueprint keeps working when lights are selected via entities, devices, or areas.
 - **Automatic re-activation** and **Disable on color mode** only take effect when the adaptive control entity is an `input_boolean`.

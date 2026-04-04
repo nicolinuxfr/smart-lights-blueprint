@@ -44,7 +44,7 @@
   "input.restore_on_off.name": "Automatic re-activation",
   "input.sensors.description": "Binary sensors that drive automatic on/off. Leave empty when using adaptive lighting only.",
   "input.sensors.name": "Sensors",
-  "input.switch_entity.description": "Optional input_boolean used as an external toggle. Turning it on immediately turns the managed lights on, and turning it off immediately turns them off. This toggle bypasses the turn-on conditions and control switches.",
+  "input.switch_entity.description": "Optional input_boolean used as an external toggle. Turning it on immediately turns the managed lights on, and turning it off immediately turns them off. It also stays in sync with the managed lights: it turns on when they are all on and turns off when they are all off. This toggle bypasses the turn-on conditions and control switches.",
   "input.switch_entity.name": "Switch entity",
   "input.weather_entity.description": "Optional weather entity used to slightly shift adaptive brightness and white temperature.",
   "input.weather_entity.name": "Weather entity",

@@ -146,40 +146,10 @@ action:
               - switch_toggled
         sequence:
           - variables:
-              switch_event_valid: >-
-                {{ switch_entity not in ('', none)
-                   and trigger.event is defined
-                   and trigger.event.data is defined
-                   and trigger.event.data.new_state is not none
-                   and trigger.event.data.old_state is not none
-                   and trigger.event.data.old_state.state not in ['unavailable', 'unknown']
-                   and trigger.event.data.new_state.state not in ['unavailable', 'unknown'] }}
-              switch_turning_off: >-
-                {{ (switch_event_valid | bool) and trigger.event.data.new_state.state == 'off' }}
-          - condition: "{{ switch_event_valid | bool }}"
-          - if:
-              - "{{ switch_turning_off | bool }}"
-            then:
-              - action: light.turn_off
-                target: !input lights
-            else:
-              - if:
-                  - "{{ enable_adaptive | bool }}"
-                then:
-                  - variables:
-                      [[include:adaptive/variables.yaml]]
-                  - action: light.turn_on
-                    target: !input lights
-                    data:
-                      brightness_pct: "{{ effective_brightness | int(0) }}"
-                      color_temp_kelvin: "{{ effective_kelvin | int(0) }}"
-                      transition: 1
-                else:
-                  - action: light.turn_on
-                    target: !input lights
+              [[include:variables/switch_toggle_state.yaml]]
+          [[include:actions/switch_toggle.yaml]]
 
       - conditions:
-          - "{{ enable_adaptive | bool }}"
           - condition: trigger
             id:
               - light_state_changed
@@ -194,23 +164,8 @@ action:
               light_trigger_entity_id: "{{ trigger.event.data.entity_id }}"
               light_trigger_from_state: "{{ trigger.event.data.old_state }}"
               light_trigger_to_state: "{{ trigger.event.data.new_state }}"
-              auto_mode_is_input_boolean: >-
-                {{ auto_mode_input_entity not in ['', none]
-                   and auto_mode_input_entity.startswith('input_boolean.') }}
-              all_target_lights_off: >-
-                {{ (expand(expanded_light_entities) | selectattr('state', 'eq', 'on') | list | count) == 0 }}
-              light_switched_to_color: >-
-                {{ light_trigger_to_state.state == 'on'
-                   and light_trigger_to_state.attributes.color_mode is defined
-                   and light_trigger_to_state.attributes.color_mode not in ['color_temp', 'white']
-                   and (
-                     light_trigger_from_state is none
-                     or light_trigger_from_state.attributes.color_mode is not defined
-                     or light_trigger_from_state.attributes.color_mode != light_trigger_to_state.attributes.color_mode
-                   ) }}
-              light_turned_on: >-
-                {{ light_trigger_to_state.state == 'on'
-                   and (light_trigger_from_state is none or light_trigger_from_state.state != 'on') }}
+              [[include:variables/light_group_state.yaml]]
+          [[include:actions/sync_switch_entity.yaml]]
           - if:
               - >
                 {{ (disable_on_color | bool)
@@ -232,6 +187,7 @@ action:
                 target:
                   entity_id: "{{ auto_mode_input_entity }}"
               - stop: "Restored control entity after all lights turned off"
+          - condition: "{{ enable_adaptive | bool }}"
           - condition: "{{ light_turned_on | bool }}"
           - condition: >
               {{ auto_mode_input_entity in ['', none]
