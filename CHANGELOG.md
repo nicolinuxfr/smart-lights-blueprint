@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026.4.2
+
+- Much better texts and organization, hopefully.
+
 ## 2026.4.1
 
 - Sync of the switch entity based on the lights (keep everything more stable and useful). The idea being, you can always toggle the entity from a physical switch using an automation and get the proper result.

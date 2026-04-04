@@ -39,12 +39,14 @@ https://raw.githubusercontent.com/nicolinuxfr/smart-lights-blueprint/gh-pages/fr
 
 ### Mode nuit
 
+`Uniquement la nuit` agit sur l'allumage via capteur. Les autres paramètres de cette section n'ont d'effet que si l'éclairage adaptatif est activé.
+
 | Paramètre | Description | Défaut |
 |-----------|-------------|--------|
 | **Uniquement la nuit** | Autorise l'allumage via capteur seulement quand le soleil est sous l'horizon | `false` |
-| **Entité de mode nuit** | `input_boolean` ou `binary_sensor` optionnel qui active des valeurs fixes de nuit | `""` |
-| **Luminosité nuit** | Luminosité fixe pendant le mode nuit | `20 %` |
-| **Température nuit** | Température de blanc fixe pendant le mode nuit | `2200 K` |
+| **Entité de mode nuit** | `input_boolean` ou `binary_sensor` optionnel qui active des valeurs adaptatives fixes de nuit | `""` |
+| **Luminosité nuit** | Luminosité adaptative fixe pendant le mode nuit | `20 %` |
+| **Température nuit** | Température de blanc adaptative fixe pendant le mode nuit | `2200 K` |
 
 ### Allumage auto – Options
 
@@ -72,7 +74,7 @@ https://raw.githubusercontent.com/nicolinuxfr/smart-lights-blueprint/gh-pages/fr
 ## Combinaisons possibles
 
 - **Allumage/extinction automatique uniquement** : renseignez les **Capteurs d'allumage**, des **entités de contrôle** et/ou l'**Interrupteur**, sans activer l'éclairage adaptatif.
-- **Éclairage adaptatif uniquement** : activez l'éclairage adaptatif et laissez les **Capteurs d'allumage** ainsi que l'**Interrupteur** vides si vous ne voulez pas d'allumage/extinction automatique.
+- **Éclairage adaptatif uniquement** : activez l'éclairage adaptatif et laissez les **Capteurs d'allumage**, l'**Interrupteur** et les **entités de contrôle** vides si vous ne voulez pas d'allumage/extinction automatique.
 - **Les deux activés** : combinez les entrées d'allumage/extinction automatique avec l'éclairage adaptatif.
 
 ## Conditions d'allumage
@@ -89,6 +91,7 @@ Ces conditions s'appliquent uniquement à l'allumage via capteur. L'interrupteur
 - L'allumage/extinction automatique devient actif dès qu'au moins un **Capteur d'allumage**, un **Interrupteur** ou une **entité de contrôle** est configuré.
 - L'interrupteur optionnel est synchronisé à partir des lumières gérées : il s'active quand elles sont toutes allumées et se désactive quand elles sont toutes éteintes, sans relancer des commandes d'éclairage inutiles.
 - Les valeurs adaptatives sont appliquées lorsque la première lumière gérée s'allume depuis un état où tout était éteint, puis rafraîchies toutes les 5 minutes tant que des lumières compatibles restent allumées.
+- Les valeurs fixes du **Mode nuit** ne s'appliquent que si **l'éclairage adaptatif** est activé.
 - Le blueprint continue de fonctionner quand les lumières sont sélectionnées via des entités, des appareils ou des zones.
 - **Réactivation automatique** et **Désactiver sur mode couleur** ne prennent effet que si l'entité de contrôle adaptatif est un `input_boolean`.
 - Le blueprint conserve maintenant 20 traces et n'utilise plus l'écouteur global `state_changed` qui pouvait remplir l'historique de traces d'exécutions vides.

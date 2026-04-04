@@ -29,88 +29,20 @@ switch_entity:
   selector:
     entity:
       domain: input_boolean
-night_section:
-  name: "[[section.night.options]]"
-  icon: mdi:weather-night
-  description: "[[section.night.options.description]]"
-  collapsed: true
-  input:
-    night_only:
-      name: "[[input.night_only.name]]"
-      description: "[[input.night_only.description]]"
-      default: false
-      selector:
-        boolean:
-    night_mode_entity:
-      name: "[[input.night_mode_entity.name]]"
-      description: "[[input.night_mode_entity.description]]"
-      default: ""
-      selector:
-        entity:
-          filter:
-            - domain: input_boolean
-            - domain: binary_sensor
-    night_mode_brightness:
-      name: "[[input.night_mode_brightness.name]]"
-      description: "[[input.night_mode_brightness.description]]"
-      default: 20
-      selector:
-        number:
-          min: 1
-          max: 100
-          step: 1
-          mode: slider
-          unit_of_measurement: "%"
-    night_mode_kelvin:
-      name: "[[input.night_mode_kelvin.name]]"
-      description: "[[input.night_mode_kelvin.description]]"
-      default: 2200
-      selector:
-        number:
-          min: 1800
-          max: 5000
-          step: 50
-          mode: slider
-          unit_of_measurement: K
-auto_onoff_options_section:
-  name: "[[section.auto_onoff.options]]"
-  icon: mdi:tune
-  description: "[[section.auto_onoff.options.description]]"
-  collapsed: true
-  input:
-    light_sensors:
-      name: "[[input.light_sensors.name]]"
-      description: "[[input.light_sensors.description]]"
-      default: []
-      selector:
-        entity:
-          domain: sensor
-          device_class: illuminance
-          multiple: true
-    light_threshold:
-      name: "[[input.light_threshold.name]]"
-      description: "[[input.light_threshold.description]]"
-      default: 30
-      selector:
-        number:
-          min: 0
-          max: 1000
-          unit_of_measurement: lx
-          mode: box
-    keep_on_open_doors:
+keep_on_open_doors:
       name: "[[input.keep_on_open_doors.name]]"
       description: "[[input.keep_on_open_doors.description]]"
       default: false
       selector:
         boolean:
-    control_entities_off:
-      name: "[[input.control_entities_off.name]]"
-      description: "[[input.control_entities_off.description]]"
-      default: []
-      selector:
-        entity:
-          domain: input_boolean
-          multiple: true
+control_entities_off:
+  name: "[[input.control_entities_off.name]]"
+  description: "[[input.control_entities_off.description]]"
+  default: []
+  selector:
+    entity:
+      domain: input_boolean
+      multiple: true
 adaptive_section:
   name: "[[section.adaptive.settings]]"
   icon: mdi:white-balance-sunny
@@ -173,9 +105,7 @@ adaptive_section:
       default: ""
       selector:
         entity:
-          filter:
-            - domain: input_boolean
-            - domain: binary_sensor
+          domain: input_boolean
     restore_on_off:
       name: "[[input.restore_on_off.name]]"
       description: "[[input.restore_on_off.description]]"
@@ -195,3 +125,65 @@ adaptive_section:
       selector:
         entity:
           domain: weather
+night_section:
+  name: "[[section.night.options]]"
+  icon: mdi:weather-night
+  description: "[[section.night.options.description]]"
+  collapsed: true
+  input:
+    night_only:
+      name: "[[input.night_only.name]]"
+      description: "[[input.night_only.description]]"
+      default: false
+      selector:
+        boolean:
+    light_sensors:
+      name: "[[input.light_sensors.name]]"
+      description: "[[input.light_sensors.description]]"
+      default: []
+      selector:
+        entity:
+          domain: sensor
+          device_class: illuminance
+          multiple: true
+    light_threshold:
+      name: "[[input.light_threshold.name]]"
+      description: "[[input.light_threshold.description]]"
+      default: 30
+      selector:
+        number:
+          min: 0
+          max: 1000
+          unit_of_measurement: lx
+          mode: box
+    night_mode_entity:
+      name: "[[input.night_mode_entity.name]]"
+      description: "[[input.night_mode_entity.description]]"
+      default: ""
+      selector:
+        entity:
+          filter:
+            - domain: input_boolean
+            - domain: binary_sensor
+    night_mode_brightness:
+      name: "[[input.night_mode_brightness.name]]"
+      description: "[[input.night_mode_brightness.description]]"
+      default: 20
+      selector:
+        number:
+          min: 1
+          max: 100
+          step: 1
+          mode: slider
+          unit_of_measurement: "%"
+    night_mode_kelvin:
+      name: "[[input.night_mode_kelvin.name]]"
+      description: "[[input.night_mode_kelvin.description]]"
+      default: 2200
+      selector:
+        number:
+          min: 1800
+          max: 5000
+          step: 50
+          mode: slider
+          unit_of_measurement: K

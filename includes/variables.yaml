@@ -18,6 +18,9 @@ enable_adaptive: !input enable_adaptive
 night_only: !input night_only
 restore_on_off: !input restore_on_off
 disable_on_color: !input disable_on_color
+night_mode_active: >-
+  {{ night_mode_entity_id not in ['', none]
+     and is_state(night_mode_entity_id, 'on') }}
 auto_onoff_enabled: >-
   {% set has_sensors = sensors not in (none, [], '') %}
   {% set has_switch = switch_entity not in (none, '') %}

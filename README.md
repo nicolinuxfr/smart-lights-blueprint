@@ -38,12 +38,14 @@ https://raw.githubusercontent.com/nicolinuxfr/smart-lights-blueprint/gh-pages/en
 
 ### Night mode
 
+`Night only` affects sensor-based turn-on. The other inputs in this section only affect adaptive lighting when it is enabled.
+
 | Input | Description | Default |
 |-------|-------------|---------|
 | **Night only** | Allow sensor-based turn-on only when the sun is below the horizon | `false` |
-| **Night mode entity** | Optional `input_boolean` or `binary_sensor` that activates fixed night values | `""` |
-| **Night brightness** | Fixed brightness while night mode is active | `20%` |
-| **Night temperature** | Fixed white temperature while night mode is active | `2200 K` |
+| **Night mode entity** | Optional `input_boolean` or `binary_sensor` that activates fixed adaptive night values | `""` |
+| **Night brightness** | Fixed adaptive brightness while night mode is active | `20%` |
+| **Night temperature** | Fixed adaptive white temperature while night mode is active | `2200 K` |
 
 ### Auto on/off – Options
 
@@ -71,7 +73,7 @@ https://raw.githubusercontent.com/nicolinuxfr/smart-lights-blueprint/gh-pages/en
 ## Feature combinations
 
 - **Automatic on/off only**: configure **Turn-on sensors**, **control entities**, and/or the **Switch**, without enabling adaptive lighting.
-- **Adaptive lighting only**: enable adaptive lighting and leave **Turn-on sensors** plus the **Switch** empty if you do not want automatic on/off.
+- **Adaptive lighting only**: enable adaptive lighting and leave **Turn-on sensors**, **Switch**, and **control entities** empty if you do not want automatic on/off.
 - **Both enabled**: combine the automatic on/off inputs with adaptive lighting.
 
 ## Turn-on conditions
@@ -88,6 +90,7 @@ These conditions apply only to sensor-based turn-on. The optional switch bypasse
 - Automatic on/off becomes active as soon as at least one **Turn-on sensor**, **Switch**, or **control entity** is configured.
 - The optional switch is synchronized from the managed lights: it turns on when they are all on and turns off when they are all off, without re-triggering redundant light commands.
 - Adaptive values are applied when the first managed light turns on from an all-off state and refreshed every 5 minutes while compatible target lights remain on.
+- The fixed **Night mode** brightness and temperature only apply when **Enable adaptive lighting** is on.
 - The blueprint keeps working when lights are selected via entities, devices, or areas.
 - **Automatic re-activation** and **Disable on color mode** only take effect when the adaptive control entity is an `input_boolean`.
 - The blueprint now keeps 20 traces and avoids the previous global `state_changed` listener that could flood Home Assistant trace history with empty runs.
