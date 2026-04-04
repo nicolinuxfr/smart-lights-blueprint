@@ -51,5 +51,20 @@
   "section.adaptive.options": "Adaptive – Options",
   "section.adaptive.options.description": "External control and weather adjustment.",
   "section.auto_onoff.options": "Auto on/off – Options",
-  "section.auto_onoff.options.description": "Turn-on conditions and control entities."
+  "section.auto_onoff.options.description": "Turn-on conditions and control entities.",
+  "trigger.all_managed_lights_turned_off": "All managed lights turned off",
+  "trigger.all_managed_lights_turned_on": "All managed lights turned on",
+  "trigger.auto_mode_entity_changed": "Auto mode entity changed",
+  "trigger.automations_reloaded": "Automations reloaded",
+  "trigger.first_managed_light_turned_on": "First managed light turned on",
+  "trigger.managed_light_switched_to_color_mode": "Managed light switched to color mode",
+  "trigger.night_mode_entity_changed": "Night mode entity changed",
+  "trigger.sensor_off": "Sensor turned off",
+  "trigger.sensor_on": "Sensor turned on",
+  "trigger.sensor_recovered_unavailable": "Sensor recovered from unavailable",
+  "trigger.sensor_recovered_unknown": "Sensor recovered from unknown",
+  "trigger.sunrise": "Sunrise",
+  "trigger.sunset": "Sunset",
+  "trigger.switch_entity_changed": "Switch entity changed",
+  "trigger.tick_while_managed_lights_on": "Tick while managed lights are on"
 }

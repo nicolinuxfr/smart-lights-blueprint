@@ -51,5 +51,20 @@
   "section.adaptive.options": "Adaptatif – Options",
   "section.adaptive.options.description": "Contrôle externe et ajustement météo.",
   "section.auto_onoff.options": "Allumage auto – Options",
-  "section.auto_onoff.options.description": "Conditions d'allumage et entités de contrôle."
+  "section.auto_onoff.options.description": "Conditions d'allumage et entités de contrôle.",
+  "trigger.all_managed_lights_turned_off": "Toutes les lumières gérées se sont éteintes",
+  "trigger.all_managed_lights_turned_on": "Toutes les lumières gérées se sont allumées",
+  "trigger.auto_mode_entity_changed": "L'entité de contrôle adaptatif a changé",
+  "trigger.automations_reloaded": "Les automatisations ont été rechargées",
+  "trigger.first_managed_light_turned_on": "La première lumière gérée s'est allumée",
+  "trigger.managed_light_switched_to_color_mode": "Une lumière gérée est passée en mode couleur",
+  "trigger.night_mode_entity_changed": "L'entité de mode nuit a changé",
+  "trigger.sensor_off": "Capteur passé à inactif",
+  "trigger.sensor_on": "Capteur passé à actif",
+  "trigger.sensor_recovered_unavailable": "Capteur revenu depuis indisponible",
+  "trigger.sensor_recovered_unknown": "Capteur revenu depuis inconnu",
+  "trigger.sunrise": "Lever du soleil",
+  "trigger.sunset": "Coucher du soleil",
+  "trigger.switch_entity_changed": "L'entité interrupteur a changé",
+  "trigger.tick_while_managed_lights_on": "Tick tant que des lumières gérées sont allumées"
 }

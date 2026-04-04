@@ -1,5 +1,5 @@
 - trigger: state
-  alias: Sensor turned on
+  alias: "[[trigger.sensor_on]]"
   entity_id: !input sensors
   to: "on"
   not_from:
@@ -8,7 +8,7 @@
   id: sensor_on
 
 - trigger: state
-  alias: Sensor turned off
+  alias: "[[trigger.sensor_off]]"
   entity_id: !input sensors
   to: "off"
   not_from:
@@ -17,14 +17,14 @@
   id: sensor_off
 
 - trigger: state
-  alias: Sensor recovered from unavailable
+  alias: "[[trigger.sensor_recovered_unavailable]]"
   entity_id: !input sensors
   from: "unavailable"
   to: "off"
   id: ha_start
 
 - trigger: state
-  alias: Sensor recovered from unknown
+  alias: "[[trigger.sensor_recovered_unknown]]"
   entity_id: !input sensors
   from: "unknown"
   to: "off"
@@ -55,14 +55,14 @@
   id: control_off
 
 - trigger: event
-  alias: Switch entity changed
+  alias: "[[trigger.switch_entity_changed]]"
   event_type: state_changed
   event_data:
     entity_id: !input switch_entity
   id: switch_toggled
 
 - trigger: template
-  alias: Tick while managed lights are on
+  alias: "[[trigger.tick_while_managed_lights_on]]"
   value_template: >-
     {{ (now().minute % 5 == 0)
        and (
@@ -74,21 +74,21 @@
   id: tick
 
 - trigger: event
-  alias: Auto mode entity changed
+  alias: "[[trigger.auto_mode_entity_changed]]"
   event_type: state_changed
   event_data:
     entity_id: !input auto_mode_boolean
   id: auto_mode_enabled
 
 - trigger: event
-  alias: Night mode entity changed
+  alias: "[[trigger.night_mode_entity_changed]]"
   event_type: state_changed
   event_data:
     entity_id: !input night_mode_entity
   id: night_mode_changed
 
 - trigger: event
-  alias: Automations reloaded
+  alias: "[[trigger.automations_reloaded]]"
   event_type: call_service
   event_data:
     domain: automation
@@ -96,7 +96,7 @@
   id: automations_reload_service
 
 - trigger: template
-  alias: First managed light turned on
+  alias: "[[trigger.first_managed_light_turned_on]]"
   value_template: >-
     {{ expand(expanded_light_entities)
        | selectattr('state', 'eq', 'on')
@@ -104,7 +104,7 @@
   id: lights_any_on
 
 - trigger: template
-  alias: All managed lights turned on
+  alias: "[[trigger.all_managed_lights_turned_on]]"
   value_template: >-
     {% set on_count = expand(expanded_light_entities) | selectattr('state', 'eq', 'on') | list | count %}
     {% set total_count = expand(expanded_light_entities) | list | count %}
@@ -112,7 +112,7 @@
   id: lights_all_on
 
 - trigger: template
-  alias: All managed lights turned off
+  alias: "[[trigger.all_managed_lights_turned_off]]"
   value_template: >-
     {{ expand(expanded_light_entities)
        | selectattr('state', 'eq', 'on')
@@ -120,7 +120,7 @@
   id: lights_all_off
 
 - trigger: template
-  alias: Managed light switched to color mode
+  alias: "[[trigger.managed_light_switched_to_color_mode]]"
   value_template: >-
     {% set auto_mode_ok = auto_mode_input_entity not in ['', none]
        and auto_mode_input_entity.startswith('input_boolean.')
@@ -134,11 +134,11 @@
   id: lights_color_mode_active
 
 - trigger: sun
-  alias: Sunrise
+  alias: "[[trigger.sunrise]]"
   event: sunrise
   id: sun_event
 
 - trigger: sun
-  alias: Sunset
+  alias: "[[trigger.sunset]]"
   event: sunset
   id: sun_event
