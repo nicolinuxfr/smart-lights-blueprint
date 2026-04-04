@@ -13,6 +13,12 @@ sensors:
     entity:
       domain: binary_sensor
       multiple: true
+keep_on_open_doors:
+      name: "[[input.keep_on_open_doors.name]]"
+      description: "[[input.keep_on_open_doors.description]]"
+      default: false
+      selector:
+        boolean:
 off_delay:
   name: "[[input.off_delay.name]]"
   description: "[[input.off_delay.description]]"
@@ -29,12 +35,6 @@ switch_entity:
   selector:
     entity:
       domain: input_boolean
-keep_on_open_doors:
-      name: "[[input.keep_on_open_doors.name]]"
-      description: "[[input.keep_on_open_doors.description]]"
-      default: false
-      selector:
-        boolean:
 control_entities_off:
   name: "[[input.control_entities_off.name]]"
   description: "[[input.control_entities_off.description]]"

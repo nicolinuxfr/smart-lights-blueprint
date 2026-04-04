@@ -60,7 +60,7 @@
   "trigger.tick_while_managed_lights_on": "Automatic light adjustment",
   "trigger.auto_mode_entity_changed": "Adaptive control entity changed",
   "trigger.night_mode_entity_changed": "Night mode entity changed",
-  "trigger.automations_reloaded": "Automations reloaded",
+  "trigger.automations_reloaded": "Automation reloaded",
   "trigger.first_managed_light_turned_on": "A light turned on",
   "trigger.all_managed_lights_turned_on": "All lights turned on",
   "trigger.all_managed_lights_turned_off": "All lights turned off",

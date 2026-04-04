@@ -56,7 +56,7 @@
   "trigger.tick_while_managed_lights_on": "Ajustement automatique des lumoères",
   "trigger.auto_mode_entity_changed": "Entité de contrôle changée",
   "trigger.night_mode_entity_changed": "Entité du mode nuit changée",
-  "trigger.automations_reloaded": "Automatisations rechargées",
+  "trigger.automations_reloaded": "Automatisation rechargée",
   "trigger.first_managed_light_turned_on": "Allumage d'une lumière",
   "trigger.all_managed_lights_turned_on": "Allumage de toutes les lumières",
   "trigger.all_managed_lights_turned_off": "Extinction de toutes les lumières",
