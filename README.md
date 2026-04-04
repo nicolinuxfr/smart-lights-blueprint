@@ -88,6 +88,7 @@ These conditions apply only to sensor-based turn-on. The optional switch entity 
 
 - Automatic on/off becomes active as soon as at least one **Sensor**, **Switch entity**, or **control switch** is configured.
 - The optional switch entity is synchronized from the managed lights: it turns on when they are all on and turns off when they are all off, without re-triggering redundant light commands.
-- Adaptive values are applied when a managed light turns on and refreshed every 5 minutes while compatible target lights remain on.
+- Adaptive values are applied when the first managed light turns on from an all-off state and refreshed every 5 minutes while compatible target lights remain on.
 - The blueprint keeps working when lights are selected via entities, devices, or areas.
 - **Automatic re-activation** and **Disable on color mode** only take effect when the adaptive control entity is an `input_boolean`.
+- The blueprint now keeps 20 traces and avoids the previous global `state_changed` listener that could flood Home Assistant trace history with empty runs.

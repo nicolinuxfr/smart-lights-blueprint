@@ -89,6 +89,7 @@ Ces conditions s'appliquent uniquement à l'allumage via capteur. L'entité inte
 
 - L'allumage/extinction automatique devient actif dès qu'au moins un **Capteur**, une **Entité interrupteur** ou un **interrupteur de contrôle** est configuré.
 - L'entité interrupteur optionnelle est synchronisée à partir des lumières gérées : elle s'active quand elles sont toutes allumées et se désactive quand elles sont toutes éteintes, sans relancer des commandes d'éclairage inutiles.
-- Les valeurs adaptatives sont appliquées lorsqu'une lumière gérée s'allume puis rafraîchies toutes les 5 minutes tant que des lumières compatibles restent allumées.
+- Les valeurs adaptatives sont appliquées lorsque la première lumière gérée s'allume depuis un état où tout était éteint, puis rafraîchies toutes les 5 minutes tant que des lumières compatibles restent allumées.
 - Le blueprint continue de fonctionner quand les lumières sont sélectionnées via des entités, des appareils ou des zones.
 - **Réactivation automatique** et **Désactiver sur mode couleur** ne prennent effet que si l'entité de contrôle adaptatif est un `input_boolean`.
+- Le blueprint conserve maintenant 20 traces et n'utilise plus l'écouteur global `state_changed` qui pouvait remplir l'historique de traces d'exécutions vides.

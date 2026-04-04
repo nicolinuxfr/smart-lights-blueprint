@@ -18,6 +18,8 @@ blueprint:
 mode: parallel
 max: 10
 max_exceeded: silent
+trace:
+  stored_traces: 20
 
 trigger_variables:
   [[include:variables/trigger_inputs.yaml]]
@@ -301,55 +303,81 @@ action:
       - conditions:
           - condition: trigger
             id:
-              - light_state_changed
-          - >
-            {{ trigger.event is defined
-               and trigger.event.data is defined
-               and trigger.event.data.entity_id is defined
-               and trigger.event.data.entity_id in expanded_light_entities
-               and trigger.event.data.new_state is not none }}
+              - lights_all_on
         sequence:
-          - variables:
-              light_trigger_entity_id: "{{ trigger.event.data.entity_id }}"
-              light_trigger_from_state: "{{ trigger.event.data.old_state }}"
-              light_trigger_to_state: "{{ trigger.event.data.new_state }}"
-              [[include:variables/light_group_state.yaml]]
-          [[include:actions/sync_switch_entity.yaml]]
           - if:
               - >
-                {{ (disable_on_color | bool)
-                   and (auto_mode_is_input_boolean | bool)
-                   and (light_switched_to_color | bool) }}
+                {{ switch_entity not in ['', none]
+                   and is_state(switch_entity, 'off') }}
+            then:
+              - action: input_boolean.turn_on
+                target:
+                  entity_id: "{{ switch_entity }}"
+
+      - conditions:
+          - condition: trigger
+            id:
+              - lights_all_off
+        sequence:
+          - if:
+              - >
+                {{ switch_entity not in ['', none]
+                   and is_state(switch_entity, 'on') }}
             then:
               - action: input_boolean.turn_off
                 target:
-                  entity_id: "{{ auto_mode_input_entity }}"
-              - stop: "Handled color mode change"
+                  entity_id: "{{ switch_entity }}"
           - if:
               - >
                 {{ (restore_on_off | bool)
-                   and (auto_mode_is_input_boolean | bool)
-                   and light_trigger_to_state.state == 'off'
-                   and (all_target_lights_off | bool) }}
+                   and auto_mode_input_entity not in ['', none]
+                   and auto_mode_input_entity.startswith('input_boolean.')
+                   and is_state(auto_mode_input_entity, 'off') }}
             then:
               - action: input_boolean.turn_on
                 target:
                   entity_id: "{{ auto_mode_input_entity }}"
               - stop: "Restored control entity after all lights turned off"
-          - condition: "{{ enable_adaptive | bool }}"
-          - condition: "{{ light_turned_on | bool }}"
-          - condition: >
-              {{ auto_mode_input_entity in ['', none]
-                 or is_state(auto_mode_input_entity, 'on') }}
+
+      - conditions:
+          - condition: trigger
+            id:
+              - lights_color_mode_active
+        sequence:
+          - action: input_boolean.turn_off
+            target:
+              entity_id: "{{ auto_mode_input_entity }}"
+          - stop: "Handled color mode change"
+
+      - conditions:
+          - "{{ enable_adaptive | bool }}"
+          - condition: trigger
+            id:
+              - lights_any_on
+          - >
+            {{ auto_mode_input_entity in ['', none]
+               or is_state(auto_mode_input_entity, 'on') }}
+        sequence:
+          - variables:
+              on_lights: >
+                {{ expand(expanded_light_entities)
+                   | selectattr('state', 'eq', 'on')
+                   | map(attribute='entity_id')
+                   | list }}
+          - condition: "{{ on_lights | count > 0 }}"
           - delay:
               milliseconds: 200
           - variables:
               [[include:adaptive/variables.yaml]]
-              current_light: "{{ light_trigger_entity_id }}"
-          - variables:
-              [[include:adaptive/light_capabilities.yaml]]
-          - choose:
-              [[include:adaptive/light_update_choose.yaml]]
+          - repeat:
+              for_each: "{{ on_lights }}"
+              sequence:
+                - variables:
+                    current_light: "{{ repeat.item }}"
+                - variables:
+                    [[include:adaptive/light_capabilities.yaml]]
+                - choose:
+                    [[include:adaptive/light_update_choose.yaml]]
 
       - conditions:
           - "{{ enable_adaptive | bool }}"

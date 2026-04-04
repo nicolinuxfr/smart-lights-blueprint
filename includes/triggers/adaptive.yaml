@@ -1,6 +1,13 @@
-- trigger: time_pattern
-  alias: Tick every 5 minutes
-  minutes: "/5"
+- trigger: template
+  alias: Tick while managed lights are on
+  value_template: >-
+    {{ (now().minute % 5 == 0)
+       and (
+         expand(expanded_light_entities)
+         | selectattr('state', 'eq', 'on')
+         | list
+         | count
+       ) > 0 }}
   id: tick
 
 - trigger: event
@@ -25,10 +32,43 @@
     service: reload
   id: automations_reload_service
 
-- trigger: event
-  alias: Target light state changed
-  event_type: state_changed
-  id: light_state_changed
+- trigger: template
+  alias: First managed light turned on
+  value_template: >-
+    {{ expand(expanded_light_entities)
+       | selectattr('state', 'eq', 'on')
+       | list | count > 0 }}
+  id: lights_any_on
+
+- trigger: template
+  alias: All managed lights turned on
+  value_template: >-
+    {% set on_count = expand(expanded_light_entities) | selectattr('state', 'eq', 'on') | list | count %}
+    {% set total_count = expand(expanded_light_entities) | list | count %}
+    {{ total_count > 0 and on_count == total_count }}
+  id: lights_all_on
+
+- trigger: template
+  alias: All managed lights turned off
+  value_template: >-
+    {{ expand(expanded_light_entities)
+       | selectattr('state', 'eq', 'on')
+       | list | count == 0 }}
+  id: lights_all_off
+
+- trigger: template
+  alias: Managed light switched to color mode
+  value_template: >-
+    {% set auto_mode_ok = auto_mode_input_entity not in ['', none]
+       and auto_mode_input_entity.startswith('input_boolean.')
+       and is_state(auto_mode_input_entity, 'on') %}
+    {% set color_lights = expand(expanded_light_entities)
+       | selectattr('state', 'eq', 'on')
+       | selectattr('attributes.color_mode', 'defined')
+       | rejectattr('attributes.color_mode', 'in', ['color_temp', 'white'])
+       | list %}
+    {{ (disable_on_color | bool) and auto_mode_ok and (color_lights | count > 0) }}
+  id: lights_color_mode_active
 
 - trigger: sun
   alias: Sunrise
