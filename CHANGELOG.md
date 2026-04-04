@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026.4.1
+
+- Sync of the switch entity based on the lights (keep everything more stable and useful). The idea being, you can always toggle the entity from a physical switch using an automation and get the proper result.
+- Reorganisation of the blueprint's "UI".
+- Optimization of the code, to avoid too many triggers.
+
 ## 2026.4
 
 - Big refactor and simplification of the blueprint, hopefully without breaking anything ;
