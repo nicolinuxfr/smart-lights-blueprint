@@ -91,14 +91,20 @@ action:
               {% if trigger.id != 'automation_reenabled' %}
                 true
               {% else %}
-                {% set service_data = trigger.event.data.service_data
+                {% set old_state = trigger.event.data.old_state
                    if trigger.event is defined
                    and trigger.event.data is defined
-                   and trigger.event.data.service_data is defined
-                   else dict() %}
-                {% set target = service_data.entity_id if service_data.entity_id is defined else none %}
-                {% set target_ids = [target] if target is string else (target if target is not none else []) %}
-                {{ automation_entity_id in target_ids
+                   and trigger.event.data.old_state is defined
+                   else none %}
+                {% set new_state = trigger.event.data.new_state
+                   if trigger.event is defined
+                   and trigger.event.data is defined
+                   and trigger.event.data.new_state is defined
+                   else none %}
+                {{ old_state is not none
+                   and new_state is not none
+                   and old_state.state == 'off'
+                   and new_state.state == 'on'
                    and (
                      expand(expanded_light_entities)
                      | selectattr('state', 'eq', 'on')

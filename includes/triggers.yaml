@@ -96,10 +96,9 @@
 
 - trigger: event
   alias: "[[trigger.automation_reenabled]]"
-  event_type: call_service
+  event_type: state_changed
   event_data:
-    domain: automation
-    service: turn_on
+    entity_id: "{{ automation_entity_id }}"
   id: automation_reenabled
 
 - trigger: template
