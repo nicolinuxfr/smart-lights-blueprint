@@ -94,6 +94,7 @@ These conditions apply only to sensor-based turn-on. The optional switch bypasse
 
 - Automatic on/off becomes active as soon as at least one **Turn-on sensor**, **Switch**, or **control entity** is configured.
 - The optional switch is synchronized from the managed lights: it turns on when they are all on and turns off when they are all off, without re-triggering redundant light commands.
+- If the automation is re-enabled after being disabled, it never performs a catch-up turn-on. When managed lights are still on and the normal delayed turn-off conditions are already met, or when the configured control entities are already active and would normally cause a delayed turn-off, it waits for the configured **Turn off delay** and then turns the lights off.
 - Adaptive values are applied when the first managed light turns on from an all-off state and refreshed every 5 minutes while compatible target lights remain on.
 - When adaptive lighting is enabled, a manual switch turn-on still works at night even if sensor-based automatic turn-on is limited to daytime.
 - If **Specific settings at night** is disabled, adaptive lighting falls back to the default minimum brightness and temperature at night.

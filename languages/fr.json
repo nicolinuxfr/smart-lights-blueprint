@@ -63,6 +63,7 @@
   "trigger.night_mode_entity_changed": "Entité mode nuit changée",
   "trigger.night_illuminance_changed": "Capteur de luminosité modifié",
   "trigger.automations_reloaded": "Automatisation rechargée",
+  "trigger.automation_reenabled": "Automatisation réactivée",
   "trigger.first_managed_light_turned_on": "Allumage d'une lumière",
   "trigger.all_managed_lights_turned_on": "Allumage de toutes les lumières",
   "trigger.all_managed_lights_turned_off": "Extinction de toutes les lumières",

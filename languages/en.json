@@ -67,6 +67,7 @@
   "trigger.night_mode_entity_changed": "Night criterion entity changed",
   "trigger.night_illuminance_changed": "Illuminance sensor changed",
   "trigger.automations_reloaded": "Automation reloaded",
+  "trigger.automation_reenabled": "Automation re-enabled",
   "trigger.first_managed_light_turned_on": "A light turned on",
   "trigger.all_managed_lights_turned_on": "All lights turned on",
   "trigger.all_managed_lights_turned_off": "All lights turned off",

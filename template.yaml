@@ -19,6 +19,7 @@ trace:
 
 trigger_variables:
   control_entities_off_var: !input control_entities_off
+  automation_entity_id: "{{ this.entity_id }}"
 
 variables:
   [[include:variables.yaml]]
@@ -84,7 +85,15 @@ action:
               - sensor_off
               - control_off
               - ha_start
+              - automation_reenabled
         sequence:
+          - condition: >-
+              {{ trigger.id != 'automation_reenabled'
+                 or (
+                   expand(expanded_light_entities)
+                   | selectattr('state', 'eq', 'on')
+                   | list | count
+                 ) > 0 }}
           - wait_for_trigger:
               - trigger: state
                 entity_id: !input sensors
@@ -104,8 +113,8 @@ action:
               off_conditions_still_met: >-
                 {% set controls_off = control_entities_off %}
                 {% set has_controls = controls_off not in (none, [], '') %}
-                {% if trigger.id == 'control_off' %}
-                  {{ has_controls and not (controls_valid | bool) }}
+                {% if trigger.id in ['control_off', 'automation_reenabled'] %}
+                  {{ (controls_valid | bool) or (has_controls and not (controls_valid | bool)) }}
                 {% else %}
                   {{ controls_valid | bool }}
                 {% endif %}

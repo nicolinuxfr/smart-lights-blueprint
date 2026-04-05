@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026.4.4
+
+- When the automation is reactivated, the lights will be turned off after the set delay if the sensors are  off. 
+
 ## 2026.4.3
 
 - Night mode revamped :
