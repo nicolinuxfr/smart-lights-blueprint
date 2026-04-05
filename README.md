@@ -38,7 +38,7 @@ https://raw.githubusercontent.com/nicolinuxfr/smart-lights-blueprint/gh-pages/en
 
 ### Night mode
 
-`Night only` affects sensor-based turn-on. The other inputs in this section only affect adaptive lighting when it is enabled.
+`Night only` affects sensor-based turn-on. When a **Night mode entity** is configured and active, sensor-based automatic turn-on is blocked. The other inputs in this section only affect adaptive lighting when it is enabled.
 
 | Input | Description | Default |
 |-------|-------------|---------|
@@ -80,6 +80,7 @@ https://raw.githubusercontent.com/nicolinuxfr/smart-lights-blueprint/gh-pages/en
 
 These conditions apply only to sensor-based turn-on. The optional switch bypasses them and always toggles the lights immediately. It also bypasses the control entities below.
 
+- **Night mode entity active**: sensor-based automatic turn-on is blocked.
 - **Night only** enabled: sensor-based turn-on is allowed only when `sun.sun` is below the horizon.
 - **Illuminance sensors + threshold** configured: sensor-based turn-on is allowed when the average illuminance is below the threshold.
 - **Both configured**: sensor-based turn-on is allowed when either condition is true.

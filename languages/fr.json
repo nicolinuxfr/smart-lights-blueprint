@@ -43,7 +43,7 @@
   "input.light_threshold.name": "Seuil de luminosité",
   "input.light_threshold.description": "Les lumières ne seront allumées que si la luminosité est inférieure à cette valeur. Champ ignoré si aucun capteur de luminosité n'a été sélectionné au-dessus.",
   "input.night_mode_entity.name": "Entité de mode nuit",
-  "input.night_mode_entity.description": "Le capteur d'entrée logique sélectionné détermine le mode nuit.",
+  "input.night_mode_entity.description": "Le capteur d'entrée logique sélectionné détermine le mode nuit. Quand il est actif, l'allumage automatique par capteur est bloqué.",
   "input.night_mode_brightness.name": "Luminosité du mode nuit",
   "input.night_mode_brightness.description": "Luminosité appliquée tant que le mode nuit est actif.",
   "input.night_mode_kelvin.name": "Température nuit",

@@ -39,7 +39,7 @@ https://raw.githubusercontent.com/nicolinuxfr/smart-lights-blueprint/gh-pages/fr
 
 ### Mode nuit
 
-`Uniquement la nuit` agit sur l'allumage via capteur. Les autres paramètres de cette section n'ont d'effet que si l'éclairage adaptatif est activé.
+`Uniquement la nuit` agit sur l'allumage via capteur. Quand une **Entité de mode nuit** est configurée et active, l'allumage automatique par capteur est bloqué. Les autres paramètres de cette section n'ont d'effet que si l'éclairage adaptatif est activé.
 
 | Paramètre | Description | Défaut |
 |-----------|-------------|--------|
@@ -81,6 +81,7 @@ https://raw.githubusercontent.com/nicolinuxfr/smart-lights-blueprint/gh-pages/fr
 
 Ces conditions s'appliquent uniquement à l'allumage via capteur. L'interrupteur optionnel les contourne et bascule toujours les lumières immédiatement. Il contourne aussi les entités de contrôle ci-dessous.
 
+- **Entité de mode nuit active** : l'allumage automatique par capteur est bloqué.
 - **Uniquement la nuit** activé : l'allumage via capteur n'est autorisé que lorsque `sun.sun` est sous l'horizon.
 - **Capteurs de luminosité + seuil** configurés : l'allumage via capteur est autorisé lorsque la luminosité moyenne est sous le seuil.
 - **Les deux configurés** : l'allumage via capteur est autorisé dès qu'une des deux conditions est vraie.

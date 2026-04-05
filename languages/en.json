@@ -46,7 +46,7 @@
   "input.light_threshold.name": "Illuminance threshold",
   "input.light_threshold.description": "The lights turn on only when illuminance is below this value. Ignored if no illuminance sensor has been selected above.",
   "input.night_mode_entity.name": "Night mode entity",
-  "input.night_mode_entity.description": "The selected input helper determines night mode.",
+  "input.night_mode_entity.description": "The selected input helper determines night mode. When it is active, sensor-based automatic turn-on is blocked.",
   "input.night_mode_brightness.name": "Night mode brightness",
   "input.night_mode_brightness.description": "Brightness applied while night mode is active.",
   "input.night_mode_kelvin.name": "Night temperature",
