@@ -6,21 +6,43 @@ light_sensors: !input light_sensors
 light_threshold: !input light_threshold
 control_entities_off: !input control_entities_off
 auto_mode_input_entity: !input auto_mode_boolean
+auto_on_mode: !input auto_on_mode
 weather_entity_id: !input weather_entity
 night_mode_entity_id: !input night_mode_entity
 b_night: !input brightness_night
 b_day: !input brightness_day
 k_night: !input kelvin_night
 k_day: !input kelvin_day
+night_adaptive_enabled: !input night_adaptive_enabled
 nm_brightness: !input night_mode_brightness
 nm_kelvin: !input night_mode_kelvin
 enable_adaptive: !input enable_adaptive
-night_only: !input night_only
-restore_on_off: !input restore_on_off
-disable_on_color: !input disable_on_color
-night_mode_active: >-
+night_mode_entity_active: >-
   {{ night_mode_entity_id not in ['', none]
      and is_state(night_mode_entity_id, 'on') }}
+low_illuminance_active: >-
+  {% set ls = light_sensors %}
+  {% set thr = light_threshold | float(0) %}
+  {% if ls in (none, [], '') or thr <= 0 %}
+    false
+  {% else %}
+    {% set expanded = expand(ls) | list %}
+    {% set average = (
+      expanded | map(attribute='state') | map('float', 0) | sum /
+      [expanded | count, 1] | max
+    ) %}
+    {{ average < thr }}
+  {% endif %}
+is_night_mode: >-
+  {{ is_state('sun.sun', 'below_horizon')
+     or (low_illuminance_active | bool)
+     or (night_mode_entity_active | bool) }}
+night_adaptive_active: >-
+  {{ (enable_adaptive | bool)
+     and (night_adaptive_enabled | bool)
+     and (is_night_mode | bool) }}
+restore_on_off: !input restore_on_off
+disable_on_color: !input disable_on_color
 auto_onoff_enabled: >-
   {% set has_sensors = sensors not in (none, [], '') %}
   {% set has_switch = switch_entity not in (none, '') %}

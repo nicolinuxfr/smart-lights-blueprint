@@ -116,10 +116,7 @@ target_kelvin: >
   {% set base = (k_min + (k_max - k_min) * (adaptive_curve_factor | float(0))) %}
   {% set adjusted = base + (weather_kelvin_offset | float(0)) %}
   {{ [k_min, [adjusted, k_max] | min] | max | round(0) | int }}
-night_mode_active: >
-  {{ night_mode_entity_id not in ['', none]
-     and is_state(night_mode_entity_id, 'on') }}
 effective_brightness: >
-  {{ nm_brightness | int(20) if night_mode_active else target_brightness | int(0) }}
+  {{ nm_brightness | int(20) if (night_adaptive_active | bool) else target_brightness | int(0) }}
 effective_kelvin: >
-  {{ nm_kelvin | int(2200) if night_mode_active else target_kelvin | int(0) }}
+  {{ nm_kelvin | int(2200) if (night_adaptive_active | bool) else target_kelvin | int(0) }}

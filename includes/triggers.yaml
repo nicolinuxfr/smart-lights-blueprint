@@ -81,6 +81,11 @@
     entity_id: !input night_mode_entity
   id: night_mode_changed
 
+- trigger: state
+  alias: "[[trigger.night_illuminance_changed]]"
+  entity_id: !input light_sensors
+  id: night_lux_changed
+
 - trigger: event
   alias: "[[trigger.automations_reloaded]]"
   event_type: call_service

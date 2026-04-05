@@ -99,6 +99,34 @@ adaptive_section:
           step: 50
           mode: slider
           unit_of_measurement: K
+    night_adaptive_enabled:
+      name: "[[input.night_adaptive_enabled.name]]"
+      description: "[[input.night_adaptive_enabled.description]]"
+      default: false
+      selector:
+        boolean:
+    night_mode_brightness:
+      name: "[[input.night_mode_brightness.name]]"
+      description: "[[input.night_mode_brightness.description]]"
+      default: 20
+      selector:
+        number:
+          min: 1
+          max: 100
+          step: 1
+          mode: slider
+          unit_of_measurement: "%"
+    night_mode_kelvin:
+      name: "[[input.night_mode_kelvin.name]]"
+      description: "[[input.night_mode_kelvin.description]]"
+      default: 2200
+      selector:
+        number:
+          min: 1800
+          max: 5000
+          step: 50
+          mode: slider
+          unit_of_measurement: K
     auto_mode_boolean:
       name: "[[input.auto_mode_boolean.name]]"
       description: "[[input.auto_mode_boolean.description]]"
@@ -131,12 +159,19 @@ night_section:
   description: "[[section.night.options.description]]"
   collapsed: true
   input:
-    night_only:
-      name: "[[input.night_only.name]]"
-      description: "[[input.night_only.description]]"
-      default: false
+    auto_on_mode:
+      name: "[[input.auto_on_mode.name]]"
+      description: "[[input.auto_on_mode.description]]"
+      default: day
       selector:
-        boolean:
+        select:
+          options:
+            - value: day
+              label: "[[input.auto_on_mode.option.day]]"
+            - value: night
+              label: "[[input.auto_on_mode.option.night]]"
+            - value: always
+              label: "[[input.auto_on_mode.option.always]]"
     light_sensors:
       name: "[[input.light_sensors.name]]"
       description: "[[input.light_sensors.description]]"
@@ -165,25 +200,3 @@ night_section:
           filter:
             - domain: input_boolean
             - domain: binary_sensor
-    night_mode_brightness:
-      name: "[[input.night_mode_brightness.name]]"
-      description: "[[input.night_mode_brightness.description]]"
-      default: 20
-      selector:
-        number:
-          min: 1
-          max: 100
-          step: 1
-          mode: slider
-          unit_of_measurement: "%"
-    night_mode_kelvin:
-      name: "[[input.night_mode_kelvin.name]]"
-      description: "[[input.night_mode_kelvin.description]]"
-      default: 2200
-      selector:
-        number:
-          min: 1800
-          max: 5000
-          step: 50
-          mode: slider
-          unit_of_measurement: K

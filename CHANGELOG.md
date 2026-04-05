@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026.4.3
+
+- Night mode revamped :
+  - You can choose to automatically turn on the lights when a motion sensor or door is active at night, during the day or both ;
+  - "Night" is defined by default using the sun position, and you can add two additional sources : a light sensor with a treshold and an entity ;
+  - The night settings for the adaptative light are in the adaptative settings now.
+
 ## 2026.4.2
 
 - Much better texts and organization, hopefully.
