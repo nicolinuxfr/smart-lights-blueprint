@@ -44,6 +44,7 @@ This section only decides when the blueprint should consider it to be night, and
 | Input | Description | Default |
 |-------|-------------|---------|
 | **Automatic turn-on** | Choose when sensor-based turn-on should be active | `day` |
+| **Use sun position** | Enables night mode while the sun is below the horizon | `true` |
 | **Illuminance sensors (optional)** | Optional criterion that can also activate night mode when brightness is low | `[]` |
 | **Illuminance threshold** | Threshold used to switch between day mode and night mode | `30 lx` |
 | **Night mode entity (optional)** | Optional `input_boolean` or `binary_sensor` that can also activate night mode | `""` |
@@ -82,10 +83,10 @@ This section only decides when the blueprint should consider it to be night, and
 
 These conditions apply only to sensor-based turn-on. The optional switch bypasses them and always toggles the lights immediately. It also bypasses the control entities below.
 
-- **Night detection** starts with `sun.sun` below the horizon.
+- **Use sun position** makes the sun below the horizon count as night.
 - **Illuminance sensors + threshold** can also activate night mode when the average illuminance is below the threshold.
 - **Night mode entity** can also activate night mode when the entity is `on`.
-- These night criteria use OR logic: any of them can make `night mode` active.
+- These enabled night criteria use OR logic: any one of them can make `night mode` active.
 - **Automatic turn-on = day**: sensor-based turn-on runs only when night mode is not active.
 - **Automatic turn-on = night**: sensor-based turn-on runs only when night mode is active.
 - **Automatic turn-on = permanent**: sensor-based turn-on always runs.

@@ -45,6 +45,7 @@ Cette section sert uniquement à déterminer quand le blueprint doit considérer
 | Paramètre | Description | Défaut |
 |-----------|-------------|--------|
 | **Allumage automatique** | Choisit si l'allumage via capteur est autorisé en journée, la nuit, ou en permanence | `day` |
+| **Utiliser la position du soleil Home Assistant** | Active le critère intégré `sun.sun` sous l'horizon pour le mode nuit | `true` |
 | **Capteurs de luminosité** | Critère optionnel de faible luminosité ajouté en mode OU à la détection du mode nuit | `[]` |
 | **Seuil de luminosité** | Le mode nuit s'active quand la luminosité moyenne passe sous cette valeur | `30 lx` |
 | **Entité de critère nuit** | `input_boolean` ou `binary_sensor` optionnel ajouté en mode OU à la détection du mode nuit | `""` |
@@ -83,10 +84,10 @@ Cette section sert uniquement à déterminer quand le blueprint doit considérer
 
 Ces conditions s'appliquent uniquement à l'allumage via capteur. L'interrupteur optionnel les contourne et bascule toujours les lumières immédiatement. Il contourne aussi les entités de contrôle ci-dessous.
 
-- La **détection de nuit** commence avec `sun.sun` sous l'horizon.
+- **Utiliser la position du soleil Home Assistant** fait compter `sun.sun` sous l'horizon comme nuit.
 - Les **capteurs de luminosité + seuil** peuvent aussi activer le mode nuit quand la luminosité moyenne passe sous le seuil.
 - L'**entité de critère nuit** peut aussi activer le mode nuit quand elle est `on`.
-- Ces critères de nuit sont combinés en mode OU : un seul suffit à activer le mode nuit.
+- Ces critères de nuit activés sont combinés en mode OU : un seul suffit à activer le mode nuit.
 - **Allumage automatique = day** : l'allumage via capteur fonctionne uniquement quand le mode nuit n'est pas actif.
 - **Allumage automatique = night** : l'allumage via capteur fonctionne uniquement quand le mode nuit est actif.
 - **Allumage automatique = day and night** : l'allumage via capteur fonctionne en permanence.

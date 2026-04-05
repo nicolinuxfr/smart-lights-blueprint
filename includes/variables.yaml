@@ -7,6 +7,7 @@ light_threshold: !input light_threshold
 control_entities_off: !input control_entities_off
 auto_mode_input_entity: !input auto_mode_boolean
 auto_on_mode: !input auto_on_mode
+use_ha_sun_night: !input use_ha_sun_night
 weather_entity_id: !input weather_entity
 night_mode_entity_id: !input night_mode_entity
 b_night: !input brightness_night
@@ -34,7 +35,7 @@ low_illuminance_active: >-
     {{ average < thr }}
   {% endif %}
 is_night_mode: >-
-  {{ is_state('sun.sun', 'below_horizon')
+  {{ ((use_ha_sun_night | bool) and is_state('sun.sun', 'below_horizon'))
      or (low_illuminance_active | bool)
      or (night_mode_entity_active | bool) }}
 night_adaptive_active: >-

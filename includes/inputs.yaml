@@ -172,6 +172,12 @@ night_section:
               label: "[[input.auto_on_mode.option.night]]"
             - value: always
               label: "[[input.auto_on_mode.option.always]]"
+    use_ha_sun_night:
+      name: "[[input.use_ha_sun_night.name]]"
+      description: "[[input.use_ha_sun_night.description]]"
+      default: true
+      selector:
+        boolean:
     light_sensors:
       name: "[[input.light_sensors.name]]"
       description: "[[input.light_sensors.description]]"
