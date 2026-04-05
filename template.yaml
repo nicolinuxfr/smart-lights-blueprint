@@ -19,7 +19,6 @@ trace:
 
 trigger_variables:
   control_entities_off_var: !input control_entities_off
-  automation_entity_id: "{{ this.entity_id }}"
 
 variables:
   [[include:variables.yaml]]

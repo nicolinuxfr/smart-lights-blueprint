@@ -96,9 +96,8 @@
 
 - trigger: event
   alias: "[[trigger.automation_reenabled]]"
-  event_type: state_changed
-  event_data:
-    entity_id: "{{ automation_entity_id }}"
+  value_template: >-
+    {{ is_state(this.entity_id, 'on') }}
   id: automation_reenabled
 
 - trigger: template
