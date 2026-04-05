@@ -94,11 +94,11 @@
     service: reload
   id: automations_reload_service
 
-- trigger: state
+- trigger: event
   alias: "[[trigger.automation_reenabled]]"
-  entity_id: "{{ automation_entity_id }}"
-  from: "off"
-  to: "on"
+  event_type: state_changed
+  event_data:
+    entity_id: "{{ automation_entity_id }}"
   id: automation_reenabled
 
 - trigger: template

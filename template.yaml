@@ -88,12 +88,21 @@ action:
               - automation_reenabled
         sequence:
           - condition: >-
-              {{ trigger.id != 'automation_reenabled'
-                 or (
-                   expand(expanded_light_entities)
-                   | selectattr('state', 'eq', 'on')
-                   | list | count
-                 ) > 0 }}
+              {% if trigger.id != 'automation_reenabled' %}
+                true
+              {% else %}
+                {{ trigger.event is defined
+                   and trigger.event.data is defined
+                   and trigger.event.data.old_state is not none
+                   and trigger.event.data.new_state is not none
+                   and trigger.event.data.old_state.state == 'off'
+                   and trigger.event.data.new_state.state == 'on'
+                   and (
+                     expand(expanded_light_entities)
+                     | selectattr('state', 'eq', 'on')
+                     | list | count
+                   ) > 0 }}
+              {% endif %}
           - wait_for_trigger:
               - trigger: state
                 entity_id: !input sensors
@@ -113,7 +122,9 @@ action:
               off_conditions_still_met: >-
                 {% set controls_off = control_entities_off %}
                 {% set has_controls = controls_off not in (none, [], '') %}
-                {% if trigger.id in ['control_off', 'automation_reenabled'] %}
+                {% if trigger.id == 'control_off' %}
+                  {{ has_controls and not (controls_valid | bool) }}
+                {% elif trigger.id == 'automation_reenabled' %}
                   {{ (controls_valid | bool) or (has_controls and not (controls_valid | bool)) }}
                 {% else %}
                   {{ controls_valid | bool }}
