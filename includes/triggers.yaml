@@ -94,7 +94,7 @@
     service: reload
   id: automations_reload_service
 
-- trigger: event
+- trigger: template
   alias: "[[trigger.automation_reenabled]]"
   value_template: >-
     {{ is_state(this.entity_id, 'on') }}
