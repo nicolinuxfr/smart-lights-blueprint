@@ -1,8 +1,12 @@
 # Changelog
 
+## 2026.4.5
+
+- Better handling of heteregeneous groups of lights.
+
 ## 2026.4.4
 
-- When the automation is reactivated, the lights will be turned off after the set delay if the sensors are  off. 
+- When the automation is reactivated, the lights will be turned off after the set delay if the sensors are off. 
 
 ## 2026.4.3
 
