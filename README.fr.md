@@ -97,7 +97,7 @@ Ces conditions s'appliquent uniquement à l'allumage via capteur. L'interrupteur
 - L'allumage/extinction automatique devient actif dès qu'au moins un **Capteur d'allumage**, un **Interrupteur** ou une **entité de contrôle** est configuré.
 - L'interrupteur optionnel est synchronisé à partir des lumières gérées : il s'active quand elles sont toutes allumées et se désactive quand elles sont toutes éteintes, sans relancer des commandes d'éclairage inutiles.
 - Si l'automatisation est réactivée après avoir été désactivée, elle ne fait jamais de rattrapage d'allumage. Si des lumières gérées sont encore allumées et que les conditions normales d'extinction différée sont déjà réunies, ou si les entités de contrôle configurées sont déjà actives et provoqueraient normalement une extinction différée, elle attend le **Délai d'extinction** configuré puis éteint les lumières.
-- Les valeurs adaptatives sont appliquées lorsque la première lumière gérée s'allume depuis un état où tout était éteint, puis rafraîchies toutes les 5 minutes tant que des lumières compatibles restent allumées.
+- Les valeurs adaptatives sont appliquées lumière par lumière dès que la première lumière gérée s'allume depuis un état où tout était éteint, puis rafraîchies toutes les 5 minutes tant que des lumières compatibles restent allumées.
 - Quand l'éclairage adaptatif est activé, un allumage manuel via l'interrupteur continue de fonctionner la nuit même si l'allumage automatique par capteur est limité à la journée.
 - Si **Réglages différents la nuit** est désactivé, l'éclairage adaptatif retombe sur les valeurs minimales par défaut pendant la nuit.
 - Le blueprint continue de fonctionner quand les lumières sont sélectionnées via des entités, des appareils ou des zones.
