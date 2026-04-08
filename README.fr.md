@@ -40,7 +40,7 @@ Pour que l'automatisation allume et éteigne les lumières automatiquement, sél
 
 Les lumières s'allumeront dès lors qu'au moins un des capteurs sélectionnés devient vrai. Elles s'éteindront dès que tous les capteurs sélectionnés sont faux. 
 
-**Maintenir la lumière avec les portes ouvertes**
+#### Maintenir la lumière avec les portes ouvertes
 
 Cette option distingue les portes des autres capteurs dans la liste et maintient les lumières allumées tant qu'elles restent ouvertes. Par défaut, ces capteurs sont gérés différemment et ne servent qu'à allumer la lumière, pas à la maintenir allumée.
 

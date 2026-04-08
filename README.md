@@ -40,7 +40,7 @@ For the automation to turn the lights on and off automatically, select at least 
 
 The lights turn on as soon as at least one selected sensor becomes true. They turn off once all selected sensors are false.
 
-**Keep the light on with open doors**
+#### Keep the light on with open doors
 
 This option treats doors differently from the other sensors in the list and keeps the lights on as long as they stay open. By default, those sensors are handled differently and only turn the light on, without keeping it on.
 
