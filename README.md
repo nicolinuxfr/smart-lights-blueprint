@@ -1,104 +1,150 @@
 # Smart Lights Blueprint
 
-Control one or more lights with a single blueprint. It can run sensor-based automatic on/off, adaptive lighting, or both at the same time.
+This blueprint includes everything needed to control lights managed by Home Assistant. It turns lights on and off based on sensors and can optionally adapt the lighting throughout the day.
 
-[Lire en français](README.fr.md)
+[French version](README.fr.md)
 
 ## Installation
 
-[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fraw.githubusercontent.com%2Fnicolinuxfr%2Fsmart-lights-blueprint%2Fgh-pages%2Fen%2Fsmart_lights.yaml)
+Click this button to open your Home Assistant instance and import the blueprint right away:
 
-Or copy this URL manually:
+[![Open your Home Assistant instance and show the blueprint import dialog.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fraw.githubusercontent.com%2Fnicolinuxfr%2Fsmart-lights-blueprint%2Fgh-pages%2Fen%2Fsmart_lights.yaml)
+
+Or copy this URL and paste it into the Home Assistant blueprint import field:
 
 ```text
 https://raw.githubusercontent.com/nicolinuxfr/smart-lights-blueprint/gh-pages/en/smart_lights.yaml
 ```
 
-## Quick start
+## How to use it
 
-1. Select the target **Lights**.
-2. Fill **Turn-on sensors** and/or the **Switch** if you want automatic on/off.
-3. Use **Night mode** to choose when sensor-based automatic turn-on is allowed.
-4. Open **Adaptive lighting** only if you want adaptive values or dedicated night values.
+Here is how to configure the automation, step by step, with detailed explanations for each option and what it does.
 
-## Configuration
+### Selecting the lights
 
-### Root inputs
+#### Lights
 
-| Input | Description | Default |
-|-------|-------------|---------|
-| **Lights** | Lights, devices, or areas to control | — |
+The only setting required for the automation to work properly is choosing the lights. You can select a single smart bulb, several lights, a group of lights, or even an area or tag.
 
-### Main inputs
+> [!NOTE]
+> You can choose any type of light. The automation should adapt automatically to its capabilities. If it does not, feel free to [open an issue](https://github.com/nicolinuxfr/smart-lights-blueprint/issues/new) with details about the light so I can fix the bug.
 
-| Input | Description | Default |
-|-------|-------------|---------|
-| **Turn-on sensors** | Binary sensors used for automatic on/off | `[]` |
-| **Turn off delay** | Delay before lights turn off after sensors go inactive | `00:02:00` |
-| **Switch** | Optional `input_boolean` used as an external toggle that always turns the managed lights on or off immediately, while staying synced with their all-on/all-off state | `""` |
+### Configuring automatic turn-on and turn-off
 
-### Night mode
+#### Turn-on and turn-off sensors
 
-This section only decides when the blueprint should consider it to be night, and whether sensor-based automatic turn-on should run during the day, at night, or both. Night lighting values are configured in **Adaptive lighting**.
+For the automation to turn the lights on and off automatically, select at least one binary sensor in the **Turn-on and turn-off sensors** field. You can select motion or presence sensors, door sensors, or any other sensor with a true/false state.
 
-| Input | Description | Default |
-|-------|-------------|---------|
-| **Automatic turn-on** | Choose when sensor-based turn-on should be active | `day` |
-| **Use sun position** | Enables night mode while the sun is below the horizon | `true` |
-| **Illuminance sensors (optional)** | Optional criterion that can also activate night mode when brightness is low | `[]` |
-| **Illuminance threshold** | Threshold used to switch between day mode and night mode | `30 lx` |
-| **Night mode entity (optional)** | Optional `input_boolean` or `binary_sensor` that can also activate night mode | `""` |
+> [!TIP]
+> As an example, I use a binary sensor that reports whether my desktop computer is active or my TV is on, which keeps the related lights on even when the other sensors are no longer active.
 
-### Auto on/off – Options
+The lights turn on as soon as at least one selected sensor becomes true. They turn off once all selected sensors are false.
 
-| Input | Description | Default |
-|-------|-------------|---------|
-| **Keep lights on with open doors** | Open door/window sensors keep lights on | `false` |
-| **Control entities** | `input_boolean` entities that must stay off for auto on/off to run | `[]` |
+**Keep the light on with open doors**
+
+This option treats doors differently from the other sensors in the list and keeps the lights on as long as they stay open. By default, those sensors are handled differently and only turn the light on, without keeping it on.
+
+#### Delay before turn-off
+
+Choose how long to wait before turning the lights off once all sensors become inactive (2 minutes by default).
+
+#### Turn-on with switch
+
+This option is designed to control the lights from a connected physical switch. Instead of handling the switch directly in the automation, which would require supporting too many different cases, you can select an `input_boolean` entity that will be controlled from another automation.
+
+The lights are turned on and off immediately whenever the selected helper changes state. This behavior is independent from the rest, and the lights will still turn off even if a motion sensor is still active, for example.
+
+> [!TIP]
+> For consistency, its state is synchronized with automatic turn-ons and turn-offs. In practice, if the lights are turned on because a motion sensor triggered the automation, then the helper dedicated to the switch is also turned on, and vice versa.
+
+Leave the field empty if you do not want to use this option.
+
+#### Control entities
+
+Choose one or more `input_boolean` entities that block automatic turn-ons and turn-offs when they are true. This option is useful if you want to make sure some lights stay on.
+
+Leave the field empty if you do not want to use this option.
 
 ### Adaptive lighting
 
-| Input | Description | Default |
-|-------|-------------|---------|
-| **Enable adaptive lighting** | Turn adaptive brightness and white temperature on or off | `false` |
-| **Minimum brightness** | Brightness around sunrise and sunset | `30%` |
-| **Maximum brightness** | Brightness around midday | `100%` |
-| **Minimum temperature** | Warmest white temperature around sunrise and sunset | `2700 K` |
-| **Maximum temperature** | Coolest white temperature around midday | `5500 K` |
-| **Specific settings at night** | Enable dedicated adaptive values when night mode is active | `false` |
-| **Night-specific brightness** | Dedicated brightness applied at night when the option above is enabled | `20%` |
-| **Night-specific temperature** | Dedicated white temperature applied at night when the option above is enabled | `2200 K` |
-| **Adaptive control entity** | Optional `input_boolean` or `binary_sensor` that enables adaptive updates | `""` |
-| **Automatic re-activation** | Re-enable the adaptive control entity when all managed lights turn off | `false` |
-| **Disable on color mode** | Disable the adaptive control entity when a managed light switches to color mode | `false` |
-| **Weather entity** | Optional weather entity used to shift adaptive values | `""` |
+Adaptive lighting changes the light settings throughout the day by following the course of the sun. The general idea is to have warmer, dimmer light in the morning and evening, and cooler, brighter light around noon when the sun is at its highest point.
 
-## Feature combinations
+#### Enable adaptive lighting
 
-- **Automatic on/off only**: configure **Turn-on sensors**, **control entities**, and/or the **Switch**, without enabling adaptive lighting.
-- **Adaptive lighting only**: enable adaptive lighting and leave **Turn-on sensors**, **Switch**, and **control entities** empty if you do not want automatic on/off.
-- **Both enabled**: combine the automatic on/off inputs with adaptive lighting.
+This box must be checked for the automation to adapt the settings of the selected lights. Otherwise, the automation only turns the lights on and off.
 
-## Turn-on conditions
+#### Brightness and temperature settings
 
-These conditions apply only to sensor-based turn-on. The optional switch bypasses them and always toggles the lights immediately. It also bypasses the control entities below.
+The following options are fairly self-explanatory: define the minimum and maximum values you want, and the automation will work within that range. The idea is to choose the brightness and white temperature for the morning and evening, and the ones for the middle of the day, when the sun is highest.
 
-- **Use sun position** makes the sun below the horizon count as night.
-- **Illuminance sensors + threshold** can also activate night mode when the average illuminance is below the threshold.
-- **Night mode entity** can also activate night mode when the entity is `on`.
-- These enabled night criteria use OR logic: any one of them can make `night mode` active.
-- **Automatic turn-on = day**: sensor-based turn-on runs only when night mode is not active.
-- **Automatic turn-on = night**: sensor-based turn-on runs only when night mode is active.
-- **Automatic turn-on = permanent**: sensor-based turn-on always runs.
+The automation automatically calculates two curves, one for brightness and one for temperature. As long as managed lights are on, the new values are sent every 5 minutes, with a transition so they evolve smoothly.
 
-## Notes
+#### Specific settings at night
 
-- Automatic on/off becomes active as soon as at least one **Turn-on sensor**, **Switch**, or **control entity** is configured.
-- The optional switch is synchronized from the managed lights: it turns on when they are all on and turns off when they are all off, without re-triggering redundant light commands.
-- If the automation is re-enabled after being disabled, it never performs a catch-up turn-on. When managed lights are still on and the normal delayed turn-off conditions are already met, or when the configured control entities are already active and would normally cause a delayed turn-off, it waits for the configured **Turn off delay** and then turns the lights off.
-- Adaptive values are applied per light as soon as the first managed light turns on from an all-off state, then refreshed every 5 minutes while compatible target lights remain on.
-- When adaptive lighting is enabled, a manual switch turn-on still works at night even if sensor-based automatic turn-on is limited to daytime.
-- If **Specific settings at night** is disabled, adaptive lighting falls back to the default minimum brightness and temperature at night.
-- The blueprint keeps working when lights are selected via entities, devices, or areas.
-- **Automatic re-activation** and **Disable on color mode** only take effect when the adaptive control entity is an `input_boolean`.
-- The blueprint now keeps 20 traces and avoids the previous global `state_changed` listener that could flood Home Assistant trace history with empty runs.
+Check the box to apply different settings at night. By default, the minimum values selected above are used. If you prefer other values, enable the option and choose the temperature and brightness below.
+
+> [!NOTE]
+> By default, night depends on the sun and is calculated automatically by Home Assistant. The automation still takes your preferences into account, as defined later in the automation.
+
+#### Control entity
+
+Same principle as with automatic turn-on and turn-off: choose an `input_boolean` entity that disables adaptive lighting when it is itself disabled. In that case, the last setting is kept as long as it stays inactive.
+
+The following two options are tied to it:
+
+- **Automatic re-activation**: by default, the automation does not manage the control entity, but if you want, it can be re-enabled once all managed lights are off.
+- **Disable on color mode**: when this option is enabled, the control entity is automatically disabled if one light switches to color mode. The idea here is that the automation only manages white light, but you can temporarily enable colors and keep them until the control entity is enabled again.
+
+These two options can be enabled at the same time. In that case, the lights return to white after they turn off.
+
+#### Adjust with the weather
+
+Select a weather entity to enable a slight adjustment to white temperature and brightness based on the weather conditions. It is subtle, but the lights become a little dimmer and a little warmer than the selected maximum values when the weather is poor.
+
+### Night mode
+
+The automation handles day and night differently, with two opposite goals that you can choose depending on your preferences. This section also defines what counts as night, with several options to adapt the automation to as many needs as possible.
+
+#### Automatic turn-on
+
+By default, the automation only runs during the day, which means the lights do not turn on automatically at night. Change this setting to invert its behavior and activate the lights only at night, or to keep the automation active all the time.
+
+> [!NOTE]
+> To be clear, this only concerns automatic turn-on from a sensor. By design, turn-on through the entity managed by a switch always remains available: if you press a switch, you always want to turn the lights on or off.
+
+#### Use sun position
+
+By default, the automation uses the sun position provided by Home Assistant to determine whether it is day or night. As soon as the sun is up, it is day. As soon as it has set, it is night.
+
+You can disable this option, provided that you configure one of the two other methods used to determine whether it is night.
+
+#### Illuminance sensors (optional)
+
+First alternative method: choose illuminance sensors for night mode. If you select several sensors, the automation automatically calculates the average value.
+
+The next field lets you define the brightness threshold from which it becomes day (30 lux by default). Any lower value is considered night.
+
+#### Night mode entity (optional)
+
+Second alternative method: an `input_boolean` entity or a `binary_sensor` that determines night mode when the entity or sensor is active.
+
+> [!TIP]
+> These three methods are not mutually exclusive and you can use them at the same time. In that case, night mode is active as soon as at least one criterion is true.
+
+## Limitations
+
+This blueprint intentionally does not handle some adaptive-lighting features:
+
+- No color handling: only white temperature and brightness are adjusted throughout the day.
+- No alternative curve presets: the selected parameters are the ones that match my needs.
+- No manual start and end times: only sunrise and sunset at your home location are used.
+
+On the automatic turn-on and turn-off side, I covered all the needs in my home, but there are probably other cases that I have not thought about.
+
+If you have suggestions to improve the whole thing, I am always interested, even if the automation generated by the blueprint is already fairly complex.
+
+## Warning
+
+I did not directly code this blueprint myself. I used tools such as Codex and Claude Code to create it. It is therefore provided without any guarantee, except that it works correctly in my own setup. I tested it with many configurations and many lights, and I have not noticed any issue.
+
+All French texts were written by me. Those tools handled the translation.

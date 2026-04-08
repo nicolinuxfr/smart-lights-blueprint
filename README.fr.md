@@ -1,105 +1,150 @@
-# Blueprint Smart Lights
+# Blueprint lumières intelligentes
 
-Contrôlez une ou plusieurs lumières avec un seul blueprint. Il peut gérer l'allumage/extinction automatique par capteurs, l'éclairage adaptatif, ou les deux en même temps.
+Ce blueprint intègre tout le nécessaire pour contrôler des éclairages gérés par Home Assistant. Il allume et éteint des lumières en fonction de capteurs et en option, peut adapter l'éclairage tout au long de la journée.
 
-[Read in English](README.md)
-
+[Version anglaise](README.md)
 
 ## Installation
 
+Cliquez sur ce bouton pour ouvrir votre instance Home Assistant et importer le blueprint dans la foulée :
+
 [![Ouvrez votre instance Home Assistant et affichez la boîte de dialogue d'importation de blueprint.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fraw.githubusercontent.com%2Fnicolinuxfr%2Fsmart-lights-blueprint%2Fgh-pages%2Ffr%2Fsmart_lights.yaml)
 
-Ou copiez cette URL manuellement :
+Ou copiez cette URL pour la coller dans le champ d'import de blueprint de Home Assistant :
 
 ```text
 https://raw.githubusercontent.com/nicolinuxfr/smart-lights-blueprint/gh-pages/fr/smart_lights.yaml
 ```
 
-## Démarrage rapide
+## Mode d'emploi
 
-1. Sélectionnez les **Lumières** cibles.
-2. Renseignez les **Capteurs d'allumage** et/ou l'**Interrupteur** si vous voulez l'allumage/extinction automatique.
-3. Utilisez **Mode nuit** pour choisir quand l'allumage automatique par capteur est autorisé.
-4. Ouvrez **Éclairage adaptatif** uniquement si vous voulez des valeurs adaptatives ou des réglages dédiés la nuit.
+Voici comment configurer l'automatisation, pas-à-pas et avec des explications détaillées sur chaque option et son rôle.
 
-## Configuration
+### Sélection des éclairages
 
-### Paramètres racine
+#### Lumières
 
-| Paramètre | Description | Défaut |
-|-----------|-------------|--------|
-| **Lumières** | Lumières, appareils ou zones à contrôler | — |
+Le seul paramètre indispensable au bon fonctionnement de l'automatisation est le choix des lumières. Vous pouvez choisir une seule lampe connectée, en configurer plusieurs, sélectionner un groupe d'éclairages voire une zone ou un tag. 
 
-### Paramètres principaux
+> [!NOTE]
+> Vous pouvez choisir n'importe quel type d'éclairage, l'automatisation devrait s'adapter automatiquement à ses capacités. Si ce n'est pas le cas, n'hésitez pas à [ouvrir une *issue*](https://github.com/nicolinuxfr/smart-lights-blueprint/issues/new) en donnant les détails sur l'éclairage, pour que je corrige le bug.
 
-| Paramètre | Description | Défaut |
-|-----------|-------------|--------|
-| **Capteurs d'allumage** | Capteurs binaires utilisés pour l'allumage/extinction automatique | `[]` |
-| **Délai d'extinction** | Délai avant extinction après l'inactivité des capteurs | `00:02:00` |
-| **Interrupteur** | `input_boolean` optionnel utilisé comme interrupteur externe qui allume ou éteint toujours immédiatement les lumières gérées, tout en restant synchronisé avec leur état global allumé/éteint | `""` |
+### Configuration de l'allumage et de l'extinction automatiques
 
-### Mode nuit
+#### Capteurs d’allumage et extinction
 
-Cette section sert uniquement à déterminer quand le blueprint doit considérer qu'il fait nuit, et si l'allumage automatique par capteur doit fonctionner le jour, la nuit, ou les deux. Les valeurs d'éclairage de nuit se règlent dans **Éclairage adaptatif**.
+Pour que l'automatisation allume et éteigne les lumières automatiquement, sélectionnez au moins un capteur binaire dans le champ « Capteurs d’allumage et extinction ». Vous pouvez sélectionner des capteurs de mouvements ou de présence, des capteurs d'ouverture ou tout autre type de capteur vrai ou faux.
 
-| Paramètre | Description | Défaut |
-|-----------|-------------|--------|
-| **Allumage automatique** | Choisit si l'allumage via capteur est autorisé en journée, la nuit, ou en permanence | `day` |
-| **Utiliser la position du soleil Home Assistant** | Active le critère intégré `sun.sun` sous l'horizon pour le mode nuit | `true` |
-| **Capteurs de luminosité** | Critère optionnel de faible luminosité ajouté en mode OU à la détection du mode nuit | `[]` |
-| **Seuil de luminosité** | Le mode nuit s'active quand la luminosité moyenne passe sous cette valeur | `30 lx` |
-| **Entité de critère nuit** | `input_boolean` ou `binary_sensor` optionnel ajouté en mode OU à la détection du mode nuit | `""` |
+> [!TIP]
+> Pour donner un exemple, j'utilise un capteur binaire qui signale que mon ordinateur de bureau est actif ou que mon téléviseur est allumé, ce qui permet de maintenir les lumières associées, même si les autres capteurs ne sont plus activés.
 
-### Allumage auto – Options
+Les lumières s'allumeront dès lors qu'au moins un des capteurs sélectionnés devient vrai. Elles s'éteindront dès que tous les capteurs sélectionnés sont faux. 
 
-| Paramètre | Description | Défaut |
-|-----------|-------------|--------|
-| **Maintenir les lumières avec portes ouvertes** | Les capteurs de porte/fenêtre ouverts maintiennent les lumières allumées | `false` |
-| **Entités de contrôle** | Entités `input_boolean` devant rester désactivées pour l'allumage/extinction auto | `[]` |
+**Maintenir la lumière avec les portes ouvertes**
+
+Cette option distingue les portes des autres capteurs dans la liste et maintient les lumières allumées tant qu'elles restent ouvertes. Par défaut, ces capteurs sont gérés différemment et ne servent qu'à allumer la lumière, pas à la maintenir allumée.
+
+#### Délai avant extinction
+
+Choisissez la durée avant d'éteindre les lumières, une fois que tous les capteurs deviennent inactifs (2 minutes par défaut). 
+
+#### Allumage avec interrupteur
+
+Cette option est pensée pour contrôler la lumière depuis un interrupteur physique connecté. Au lieu de gérer l'interrupteur directement dans l'automatisation, ce qui obligerait à gérer trop de cas de figure différents, vous pouvez choisir une entité de type entrée logique (`input_boolean`) qui sera contrôlée depuis une autre automatisation.
+
+Les lumières seront immédiatement allumées et éteintes quand l'entité choisie change de statut. Ce fonctionnement est indépendant du reste et l'extinction aura lieu même si un capteur de mouvements est encore actif, par exemple.
+
+> [!TIP]
+> Pour plus de cohérence, son état est synchronisé avec les allumages et extinctions automatisés. Concrètement, si les lumières sont allumées parce qu'un capteur de mouvement déclenche l'automatisation, alors le capteur dédié à l'interrupteur sera lui aussi allumé, et vice-versa.
+
+Laissez le champ vide si vous ne voulez pas utiliser cette option.
+
+#### Entités de contrôle
+
+Choisissez une ou plusieurs entités type entrée logique (`input_boolean`) qui bloqueront les allumages et extinctions automatiques **si elles sont vraies**. Cette option est utile pour s'assurer que des lumières restent allumées. 
+
+Laissez le champ vide si vous ne souhaitez pas utiliser cette option.
 
 ### Éclairage adaptatif
 
-| Paramètre | Description | Défaut |
-|-----------|-------------|--------|
-| **Activer l'éclairage adaptatif** | Active ou désactive la luminosité et la température de blanc adaptatives | `false` |
-| **Luminosité minimale** | Luminosité autour du lever et du coucher du soleil | `30 %` |
-| **Luminosité maximale** | Luminosité autour du milieu de journée | `100 %` |
-| **Température minimale** | Température de blanc la plus chaude autour du lever et du coucher du soleil | `2700 K` |
-| **Température maximale** | Température de blanc la plus froide autour du milieu de journée | `5500 K` |
-| **Réglages différents la nuit** | Active des valeurs adaptatives dédiées quand le mode nuit est actif | `false` |
-| **Luminosité spécifique la nuit** | Luminosité dédiée appliquée la nuit quand l'option ci-dessus est activée | `20 %` |
-| **Température spécifique la nuit** | Température de blanc dédiée appliquée la nuit quand l'option ci-dessus est activée | `2200 K` |
-| **Entité de contrôle adaptatif** | `input_boolean` ou `binary_sensor` optionnel qui autorise les mises à jour adaptatives | `""` |
-| **Réactivation automatique** | Réactive l'entité de contrôle adaptatif quand toutes les lumières gérées s'éteignent | `false` |
-| **Désactiver sur mode couleur** | Désactive l'entité de contrôle adaptatif quand une lumière gérée passe en mode couleur | `false` |
-| **Entité météo** | Entité météo optionnelle utilisée pour décaler les valeurs adaptatives | `""` |
+L'éclairage adaptatif modifie les paramètres des éclairages tout au long de la journée en suivant la course du soleil. Le principe général est d'avoir une lumière plus chaude et moins lumineuse le matin et le soir, une lumière plus froide et forte autour de midi quand le soleil est à son zénith.
 
-## Combinaisons possibles
+#### Activer l'éclairage adaptatif
 
-- **Allumage/extinction automatique uniquement** : renseignez les **Capteurs d'allumage**, des **entités de contrôle** et/ou l'**Interrupteur**, sans activer l'éclairage adaptatif.
-- **Éclairage adaptatif uniquement** : activez l'éclairage adaptatif et laissez les **Capteurs d'allumage**, l'**Interrupteur** et les **entités de contrôle** vides si vous ne voulez pas d'allumage/extinction automatique.
-- **Les deux activés** : combinez les entrées d'allumage/extinction automatique avec l'éclairage adaptatif.
+La case doit être cochée pour que l'automatisation adapte les paramètres des éclairages sélectionnés. Sans cela, l'automatisation se contentera d'allumer et éteindre les lumières. 
 
-## Conditions d'allumage
+#### Paramètres de luminosité et température
 
-Ces conditions s'appliquent uniquement à l'allumage via capteur. L'interrupteur optionnel les contourne et bascule toujours les lumières immédiatement. Il contourne aussi les entités de contrôle ci-dessous.
+Les options suivantes sont assez explicites : définissez les valeurs minimales et maximales désirées et l'automatisation travaillera à l'intérieur de ce cadre. L'idée est de choisir la luminosité et la température des blancs pour le matin et le soir et celles pour le milieu de la journée, quand le soleil est au point le plus haut.
 
-- **Utiliser la position du soleil Home Assistant** fait compter `sun.sun` sous l'horizon comme nuit.
-- Les **capteurs de luminosité + seuil** peuvent aussi activer le mode nuit quand la luminosité moyenne passe sous le seuil.
-- L'**entité de critère nuit** peut aussi activer le mode nuit quand elle est `on`.
-- Ces critères de nuit activés sont combinés en mode OU : un seul suffit à activer le mode nuit.
-- **Allumage automatique = day** : l'allumage via capteur fonctionne uniquement quand le mode nuit n'est pas actif.
-- **Allumage automatique = night** : l'allumage via capteur fonctionne uniquement quand le mode nuit est actif.
-- **Allumage automatique = day and night** : l'allumage via capteur fonctionne en permanence.
+L'automatisation calcule automatiquement deux courbes, une pour la luminosité et une pour la température. Tant que des lumières contrôlées sont allumées, les nouvelles valeurs sont transmises toutes les 5 minutes, avec une transition pour les faire évoluer en douceur.
 
-## Notes
+#### Réglages spécifiques la nuit
 
-- L'allumage/extinction automatique devient actif dès qu'au moins un **Capteur d'allumage**, un **Interrupteur** ou une **entité de contrôle** est configuré.
-- L'interrupteur optionnel est synchronisé à partir des lumières gérées : il s'active quand elles sont toutes allumées et se désactive quand elles sont toutes éteintes, sans relancer des commandes d'éclairage inutiles.
-- Si l'automatisation est réactivée après avoir été désactivée, elle ne fait jamais de rattrapage d'allumage. Si des lumières gérées sont encore allumées et que les conditions normales d'extinction différée sont déjà réunies, ou si les entités de contrôle configurées sont déjà actives et provoqueraient normalement une extinction différée, elle attend le **Délai d'extinction** configuré puis éteint les lumières.
-- Les valeurs adaptatives sont appliquées lumière par lumière dès que la première lumière gérée s'allume depuis un état où tout était éteint, puis rafraîchies toutes les 5 minutes tant que des lumières compatibles restent allumées.
-- Quand l'éclairage adaptatif est activé, un allumage manuel via l'interrupteur continue de fonctionner la nuit même si l'allumage automatique par capteur est limité à la journée.
-- Si **Réglages différents la nuit** est désactivé, l'éclairage adaptatif retombe sur les valeurs minimales par défaut pendant la nuit.
-- Le blueprint continue de fonctionner quand les lumières sont sélectionnées via des entités, des appareils ou des zones.
-- **Réactivation automatique** et **Désactiver sur mode couleur** ne prennent effet que si l'entité de contrôle adaptatif est un `input_boolean`.
-- Le blueprint conserve maintenant 20 traces et n'utilise plus l'écouteur global `state_changed` qui pouvait remplir l'historique de traces d'exécutions vides.
+Cochez la case pour appliquer des réglages différents la nuit. Par défaut, les valeurs minimales sélectionnées précédemment sont utilisées. Si vous préférez d'autres valeurs, cochez l'option et choisissez la température et la luminosité en-dessous.
+
+> [!NOTE]
+> Par défaut, la nuit dépend du soleil et elle est calculée automatiquement par Home Assistant. L'automatisation tient toutefois compte de vos préférences, définies dans la suite de l'automatisation.
+
+#### Entité de contrôle
+
+Même principe que pour l'allumage et l'extinction automatique, choisissez une entité de type entrée logique (`input_boolean`) qui désactivera l'éclairage adaptatif si elle est elle-même désactivée. Le cas échéant, le dernier réglage sera maintenu tant qu'elle restera inactive.
+
+Les deux options suivantes sont liées à celle-ci : 
+
+- **Réactivation automatique** : par défaut, l'automatisation ne gère pas l'entité de contrôle, mais si vous le souhaitez, elle peut être réactivée dès lors que les lumières contrôlées sont toutes éteintes ;
+- **Désactiver avec de la couleur** : en cochant cette option, l'entité de contrôle sera automatiquement désactivée si une lumière passe aux couleurs. L'idée ici étant que l'automatisation ne gère que le blanc, mais vous pouvez activer temporairement des couleurs et les maintenir tant que l'entité de contrôle n'est pas réactivée.
+
+Ces deux options peuvent être activées en même temps, auquel cas les lumières reviendront au blanc après leur extinction.
+
+#### Ajuster avec la météo
+
+Sélectionnez une entité de type météo pour activer un léger ajustement de la température de blanc et de la luminosité en fonction des conditions météorologiques. C'est subtil, mais les lumières seront un petit peu moins lumineuses et un petit peu plus chaudes que les valeurs maximales sélectionnées lorsqu'il fait mauvais temps.
+
+### Mode nuit
+
+L'automatisation gère différemment le jour et la nuit, avec deux objectifs opposés, à choisir en fonction de vos préférences. Cette section permet aussi de définir ce qu'est la nuit, avec plusieurs options pour adapter l'automatisation à un maximum de besoins.
+
+#### Allumage automatique
+
+Par défaut, l'automatisation ne travaille que de jour, ce qui veut dire que les lumières ne s'allument pas de nuit. Changez ce paramètre pour inverser son comportement et n'activer les lumières que de nuit, ou alors pour activer l'automatisation en permanence. 
+
+> [!NOTE]
+> Précisons que cela ne concerne que l'allumage automatique des lumières à partir d'un capteur. Par choix, l'allumage par l'entité gérée par un interrupteur est fonctionnel en permanence : si vous cliquez sur un interrupteur, vous voulez toujours allumer ou éteindre les lumières. 
+
+#### Utiliser la position du soleil
+
+Par défaut, l'automatisation utilise la position du soleil fournie par Home Assistant pour déterminer s'il fait jour ou nuit. Dès que le soleil est levé, il fait jour, dès qu'il est couché, il fait nuit. 
+
+Vous pouvez décocher l'option, à condition toutefois de configurer une des deux autres méthodes pour déterminer qu'il fait nuit.
+
+#### Capteurs de luminosité (optionnel)
+
+Première méthode alternative : choisissez des capteurs de luminosité pour le mode nuit. Si vous sélectionnez plusieurs capteurs, l'automatisation calculera automatiquement la valeur moyenne.
+
+Le champ suivant permet de déterminer le seuil de luminosité à partir duquel il fait jour (30 lux par défaut). Toute valeur inférieure sera alors considérée comme nuit.
+
+#### Entité mode nuit (optionnel)
+
+Deuxième méthode alternative : une entité de type entrée logique (`input_boolean`) ou un capteur binaire (`binary_sensor`) qui détermine le mode nuit quand l'entité ou le capteur est actif.
+
+> [!TIP]
+> Ces trois méthodes ne sont pas exclusives et vous pouvez les utiliser en même temps. Dans ce cas, le mode nuit est actif dès lors qu'au moins un critère est vrai. 
+
+## Limites
+
+Ce blueprint ne gère volontairement pas certaines fonctionnalités liées à l'éclairage adaptatif : 
+
+- Pas de gestion des couleurs, seule la température du blanc et la luminosité sont ajustés tout au long de la journée ;
+- Pas de réglages différents des courbes, les paramètres retenus sont ceux qui conviennent à mes besoins ;
+- Pas d’ajustements possibles sur les heures de début et fin, seules les heures de lever et coucher du soleil à la position de votre domicile sont utilisées.
+
+Du côté des allumages et extinctions, j'ai couvert tous les besoins de mon domicile, mais il y a sûrement d'autres cas de figure que je n'ai pas envisagés.
+
+Si vous avez des suggestions pour améliorer l'ensemble, je suis toujours preneur, même si l'automatisation générée par le blueprint est déjà bien complexe.
+
+## Mise en garde
+
+Je n’ai pas directement codé ce blueprint moi-même, j’ai utilisé des outils comme Codex et Claude Code pour le créer. Il est ainsi proposé sans garantie, si ce n’est qu’il fonctionne correctement chez moi. Je l’ai testé avec de multiples configurations et de nombreux éclairages et je n’ai noté aucun problème.
+
+Tous les textes en français ont été écrits par mes soins. Ces outils se sont chargés de la traduction.
