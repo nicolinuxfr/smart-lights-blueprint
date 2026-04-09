@@ -68,8 +68,8 @@
   "trigger.automation_reenabled": "Automatisation réactivée",
   "trigger.first_managed_light_turned_on": "Allumage d'une lumière",
   "trigger.all_managed_lights_turned_on": "Allumage de toutes les lumières",
-  "trigger.all_managed_lights_turned_off": "Extinction de toutes les lumières",
   "trigger.managed_light_switched_to_color_mode": "Une lumière est passée en mode couleur",
+  "trigger.all_managed_lights_turned_off": "Extinction de toutes les lumières",
   "trigger.sunrise": "Lever du soleil",
   "trigger.sunset": "Coucher du soleil"
 }

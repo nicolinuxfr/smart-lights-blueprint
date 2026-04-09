@@ -68,8 +68,8 @@
   "trigger.automation_reenabled": "Automation re-enabled",
   "trigger.first_managed_light_turned_on": "A light turned on",
   "trigger.all_managed_lights_turned_on": "All lights turned on",
-  "trigger.all_managed_lights_turned_off": "All lights turned off",
   "trigger.managed_light_switched_to_color_mode": "A light switched to color mode",
+  "trigger.all_managed_lights_turned_off": "All lights turned off",
   "trigger.sunrise": "Sunrise",
   "trigger.sunset": "Sunset"
 }

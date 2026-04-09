@@ -243,11 +243,8 @@ action:
       - conditions:
           - condition: trigger
             id:
-              - light_turn_on_service_called
               - lights_color_mode_active
-              - lights_color_mode_active_fallback
         sequence:
-          [[include:color_mode_service_guard.yaml]]
           - action: input_boolean.turn_off
             target:
               entity_id: "{{ auto_mode_input_entity }}"

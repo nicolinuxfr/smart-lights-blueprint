@@ -117,35 +117,7 @@
   id: lights_all_on
 
 - trigger: template
-  alias: "[[trigger.all_managed_lights_turned_off]]"
-  value_template: >-
-    {{ expand(expanded_light_entities)
-       | selectattr('state', 'eq', 'on')
-       | list | count == 0 }}
-  id: lights_all_off
-
-- trigger: template
   alias: "[[trigger.managed_light_switched_to_color_mode]]"
-  value_template: >-
-    {% set auto_mode_ok = auto_mode_input_entity not in ['', none]
-       and auto_mode_input_entity.startswith('input_boolean.')
-       and is_state(auto_mode_input_entity, 'on') %}
-    {% set color_lights = expand(expanded_light_entities)
-       | selectattr('state', 'eq', 'on')
-       | selectattr('attributes.color_mode', 'defined')
-       | rejectattr('attributes.color_mode', 'in', ['color_temp', 'white'])
-       | list %}
-    {{ (disable_on_color | bool) and auto_mode_ok and (color_lights | count > 0) }}
-  id: lights_color_mode_active
-
-- trigger: event
-  event_type: call_service
-  event_data:
-    domain: light
-    service: turn_on
-  id: light_turn_on_service_called
-
-- trigger: template
   value_template: >-
     {% set auto_mode_ok = auto_mode_input_entity not in ['', none]
        and auto_mode_input_entity.startswith('input_boolean.')
@@ -173,7 +145,15 @@
       {% endif %}
     {% endfor %}
     {{ (disable_on_color | bool) and auto_mode_ok and (ns.color_lights | count > 0) }}
-  id: lights_color_mode_active_fallback
+  id: lights_color_mode_active
+
+- trigger: template
+  alias: "[[trigger.all_managed_lights_turned_off]]"
+  value_template: >-
+    {{ expand(expanded_light_entities)
+       | selectattr('state', 'eq', 'on')
+       | list | count == 0 }}
+  id: lights_all_off
 
 - trigger: sun
   alias: "[[trigger.sunrise]]"
