@@ -19,6 +19,7 @@ trace:
 
 trigger_variables:
   control_entities_off_var: !input control_entities_off
+  trigger_lights_target_var: !input lights
 
 variables:
   [[include:variables.yaml]]

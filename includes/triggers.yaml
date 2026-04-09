@@ -58,9 +58,42 @@
 - trigger: template
   alias: "[[trigger.tick_while_managed_lights_on]]"
   value_template: >-
+    {% set target = trigger_lights_target_var %}
+    {% set ns = namespace(entities=[]) %}
+    {% if target.entity_id is defined %}
+      {% set ids = [target.entity_id] if target.entity_id is string else target.entity_id %}
+      {% for current_id in ids %}
+        {% set member_ids = state_attr(current_id, 'entity_id') %}
+        {% if member_ids is string %}
+          {% set member_ids = [member_ids] %}
+        {% endif %}
+        {% if member_ids is sequence and member_ids is not string and (member_ids | count > 0) %}
+          {% set expanded_ids = expand(member_ids) | map(attribute='entity_id') | select('match', 'light\\.') | list %}
+          {% set fallback_ids = member_ids | select('match', 'light\\.') | list %}
+          {% set ns.entities = ns.entities + (expanded_ids if (expanded_ids | count > 0) else fallback_ids) %}
+        {% else %}
+          {% set expanded_ids = expand([current_id]) | map(attribute='entity_id') | select('match', 'light\\.') | list %}
+          {% set fallback_ids = [current_id] | select('match', 'light\\.') | list %}
+          {% set ns.entities = ns.entities + (expanded_ids if (expanded_ids | count > 0) else fallback_ids) %}
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+    {% if target.area_id is defined %}
+      {% set areas = [target.area_id] if target.area_id is string else target.area_id %}
+      {% for a in areas %}
+        {% set ns.entities = ns.entities + (area_entities(a) | select('match', 'light\\.') | list) %}
+      {% endfor %}
+    {% endif %}
+    {% if target.device_id is defined %}
+      {% set devices = [target.device_id] if target.device_id is string else target.device_id %}
+      {% for d in devices %}
+        {% set ns.entities = ns.entities + (device_entities(d) | select('match', 'light\\.') | list) %}
+      {% endfor %}
+    {% endif %}
+    {% set trigger_light_entities = ns.entities | unique | list %}
     {{ (now().minute % 5 == 0)
        and (
-         expand(expanded_light_entities)
+         expand(trigger_light_entities)
          | selectattr('state', 'eq', 'on')
          | list
          | count
@@ -103,7 +136,40 @@
 - trigger: template
   alias: "[[trigger.first_managed_light_turned_on]]"
   value_template: >-
-    {{ expand(expanded_light_entities)
+    {% set target = trigger_lights_target_var %}
+    {% set ns = namespace(entities=[]) %}
+    {% if target.entity_id is defined %}
+      {% set ids = [target.entity_id] if target.entity_id is string else target.entity_id %}
+      {% for current_id in ids %}
+        {% set member_ids = state_attr(current_id, 'entity_id') %}
+        {% if member_ids is string %}
+          {% set member_ids = [member_ids] %}
+        {% endif %}
+        {% if member_ids is sequence and member_ids is not string and (member_ids | count > 0) %}
+          {% set expanded_ids = expand(member_ids) | map(attribute='entity_id') | select('match', 'light\\.') | list %}
+          {% set fallback_ids = member_ids | select('match', 'light\\.') | list %}
+          {% set ns.entities = ns.entities + (expanded_ids if (expanded_ids | count > 0) else fallback_ids) %}
+        {% else %}
+          {% set expanded_ids = expand([current_id]) | map(attribute='entity_id') | select('match', 'light\\.') | list %}
+          {% set fallback_ids = [current_id] | select('match', 'light\\.') | list %}
+          {% set ns.entities = ns.entities + (expanded_ids if (expanded_ids | count > 0) else fallback_ids) %}
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+    {% if target.area_id is defined %}
+      {% set areas = [target.area_id] if target.area_id is string else target.area_id %}
+      {% for a in areas %}
+        {% set ns.entities = ns.entities + (area_entities(a) | select('match', 'light\\.') | list) %}
+      {% endfor %}
+    {% endif %}
+    {% if target.device_id is defined %}
+      {% set devices = [target.device_id] if target.device_id is string else target.device_id %}
+      {% for d in devices %}
+        {% set ns.entities = ns.entities + (device_entities(d) | select('match', 'light\\.') | list) %}
+      {% endfor %}
+    {% endif %}
+    {% set trigger_light_entities = ns.entities | unique | list %}
+    {{ expand(trigger_light_entities)
        | selectattr('state', 'eq', 'on')
        | list | count > 0 }}
   id: lights_any_on
@@ -111,15 +177,81 @@
 - trigger: template
   alias: "[[trigger.all_managed_lights_turned_on]]"
   value_template: >-
-    {% set on_count = expand(expanded_light_entities) | selectattr('state', 'eq', 'on') | list | count %}
-    {% set total_count = expand(expanded_light_entities) | list | count %}
+    {% set target = trigger_lights_target_var %}
+    {% set ns = namespace(entities=[]) %}
+    {% if target.entity_id is defined %}
+      {% set ids = [target.entity_id] if target.entity_id is string else target.entity_id %}
+      {% for current_id in ids %}
+        {% set member_ids = state_attr(current_id, 'entity_id') %}
+        {% if member_ids is string %}
+          {% set member_ids = [member_ids] %}
+        {% endif %}
+        {% if member_ids is sequence and member_ids is not string and (member_ids | count > 0) %}
+          {% set expanded_ids = expand(member_ids) | map(attribute='entity_id') | select('match', 'light\\.') | list %}
+          {% set fallback_ids = member_ids | select('match', 'light\\.') | list %}
+          {% set ns.entities = ns.entities + (expanded_ids if (expanded_ids | count > 0) else fallback_ids) %}
+        {% else %}
+          {% set expanded_ids = expand([current_id]) | map(attribute='entity_id') | select('match', 'light\\.') | list %}
+          {% set fallback_ids = [current_id] | select('match', 'light\\.') | list %}
+          {% set ns.entities = ns.entities + (expanded_ids if (expanded_ids | count > 0) else fallback_ids) %}
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+    {% if target.area_id is defined %}
+      {% set areas = [target.area_id] if target.area_id is string else target.area_id %}
+      {% for a in areas %}
+        {% set ns.entities = ns.entities + (area_entities(a) | select('match', 'light\\.') | list) %}
+      {% endfor %}
+    {% endif %}
+    {% if target.device_id is defined %}
+      {% set devices = [target.device_id] if target.device_id is string else target.device_id %}
+      {% for d in devices %}
+        {% set ns.entities = ns.entities + (device_entities(d) | select('match', 'light\\.') | list) %}
+      {% endfor %}
+    {% endif %}
+    {% set trigger_light_entities = ns.entities | unique | list %}
+    {% set on_count = expand(trigger_light_entities) | selectattr('state', 'eq', 'on') | list | count %}
+    {% set total_count = expand(trigger_light_entities) | list | count %}
     {{ total_count > 0 and on_count == total_count }}
   id: lights_all_on
 
 - trigger: template
   alias: "[[trigger.all_managed_lights_turned_off]]"
   value_template: >-
-    {{ expand(expanded_light_entities)
+    {% set target = trigger_lights_target_var %}
+    {% set ns = namespace(entities=[]) %}
+    {% if target.entity_id is defined %}
+      {% set ids = [target.entity_id] if target.entity_id is string else target.entity_id %}
+      {% for current_id in ids %}
+        {% set member_ids = state_attr(current_id, 'entity_id') %}
+        {% if member_ids is string %}
+          {% set member_ids = [member_ids] %}
+        {% endif %}
+        {% if member_ids is sequence and member_ids is not string and (member_ids | count > 0) %}
+          {% set expanded_ids = expand(member_ids) | map(attribute='entity_id') | select('match', 'light\\.') | list %}
+          {% set fallback_ids = member_ids | select('match', 'light\\.') | list %}
+          {% set ns.entities = ns.entities + (expanded_ids if (expanded_ids | count > 0) else fallback_ids) %}
+        {% else %}
+          {% set expanded_ids = expand([current_id]) | map(attribute='entity_id') | select('match', 'light\\.') | list %}
+          {% set fallback_ids = [current_id] | select('match', 'light\\.') | list %}
+          {% set ns.entities = ns.entities + (expanded_ids if (expanded_ids | count > 0) else fallback_ids) %}
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+    {% if target.area_id is defined %}
+      {% set areas = [target.area_id] if target.area_id is string else target.area_id %}
+      {% for a in areas %}
+        {% set ns.entities = ns.entities + (area_entities(a) | select('match', 'light\\.') | list) %}
+      {% endfor %}
+    {% endif %}
+    {% if target.device_id is defined %}
+      {% set devices = [target.device_id] if target.device_id is string else target.device_id %}
+      {% for d in devices %}
+        {% set ns.entities = ns.entities + (device_entities(d) | select('match', 'light\\.') | list) %}
+      {% endfor %}
+    {% endif %}
+    {% set trigger_light_entities = ns.entities | unique | list %}
+    {{ expand(trigger_light_entities)
        | selectattr('state', 'eq', 'on')
        | list | count == 0 }}
   id: lights_all_off
