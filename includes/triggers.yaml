@@ -116,35 +116,24 @@
     {{ total_count > 0 and on_count == total_count }}
   id: lights_all_on
 
-- trigger: state
+- trigger: template
   alias: "[[trigger.managed_light_switched_to_color_mode]]"
-  entity_id: "{{ managed_light_entities_var }}"
-  attribute: color_mode
-  id: lights_color_mode_active
-
-- trigger: state
-  entity_id: "{{ managed_light_entities_var }}"
-  attribute: hs_color
-  id: lights_color_mode_active
-
-- trigger: state
-  entity_id: "{{ managed_light_entities_var }}"
-  attribute: xy_color
-  id: lights_color_mode_active
-
-- trigger: state
-  entity_id: "{{ managed_light_entities_var }}"
-  attribute: rgb_color
-  id: lights_color_mode_active
-
-- trigger: state
-  entity_id: "{{ managed_light_entities_var }}"
-  attribute: rgbw_color
-  id: lights_color_mode_active
-
-- trigger: state
-  entity_id: "{{ managed_light_entities_var }}"
-  attribute: rgbww_color
+  value_template: >-
+    {% set ns = namespace(color_lights=[]) %}
+    {% for current_light in expanded_light_entities %}
+      {% if is_state(current_light, 'on') %}
+        {% set current_mode = state_attr(current_light, 'color_mode') %}
+        {% set has_color_attrs = state_attr(current_light, 'hs_color') is not none
+           or state_attr(current_light, 'rgb_color') is not none
+           or state_attr(current_light, 'rgbw_color') is not none
+           or state_attr(current_light, 'rgbww_color') is not none
+           or state_attr(current_light, 'xy_color') is not none %}
+        {% if current_mode not in [none, 'unknown', 'unavailable', 'color_temp', 'white', 'brightness', 'onoff'] or has_color_attrs %}
+          {% set ns.color_lights = ns.color_lights + [current_light] %}
+        {% endif %}
+      {% endif %}
+    {% endfor %}
+    {{ (ns.color_lights | count) > 0 }}
   id: lights_color_mode_active
 
 - trigger: template
