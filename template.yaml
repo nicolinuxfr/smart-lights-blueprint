@@ -25,36 +25,6 @@ variables:
 
 trigger:
   [[include:triggers.yaml]]
-  - trigger: template
-    alias: "Managed light switched to color mode (fallback)"
-    value_template: >-
-      {% set auto_mode_ok = auto_mode_input_entity not in ['', none]
-         and auto_mode_input_entity.startswith('input_boolean.')
-         and is_state(auto_mode_input_entity, 'on') %}
-      {% set color_mode_values = ['hs', 'xy', 'rgb', 'rgbw', 'rgbww'] %}
-      {% set white_mode_values = ['onoff', 'brightness', 'color_temp', 'white'] %}
-      {% set ns = namespace(color_lights=[]) %}
-      {% for current_light in expand(expanded_light_entities)
-         | selectattr('state', 'eq', 'on')
-         | map(attribute='entity_id')
-         | list %}
-        {% set supported_modes = state_attr(current_light, 'supported_color_modes') or [] %}
-        {% set current_mode = state_attr(current_light, 'color_mode') %}
-        {% set supports_color = supported_modes
-           | reject('in', white_mode_values)
-           | list
-           | count > 0 %}
-        {% set has_color_attrs = state_attr(current_light, 'hs_color') is not none
-           or state_attr(current_light, 'rgb_color') is not none
-           or state_attr(current_light, 'rgbw_color') is not none
-           or state_attr(current_light, 'rgbww_color') is not none
-           or state_attr(current_light, 'xy_color') is not none %}
-        {% if current_mode in color_mode_values or ((current_mode in [none, '', 'unknown', 'unavailable']) and supports_color and has_color_attrs) %}
-          {% set ns.color_lights = ns.color_lights + [current_light] %}
-        {% endif %}
-      {% endfor %}
-      {{ (disable_on_color | bool) and auto_mode_ok and (ns.color_lights | count > 0) }}
-    id: lights_color_mode_active_fallback
 
 condition:
   [[include:conditions.yaml]]
@@ -273,9 +243,11 @@ action:
       - conditions:
           - condition: trigger
             id:
+              - light_turn_on_service_called
               - lights_color_mode_active
               - lights_color_mode_active_fallback
         sequence:
+          [[include:color_mode_service_guard.yaml]]
           - action: input_boolean.turn_off
             target:
               entity_id: "{{ auto_mode_input_entity }}"
