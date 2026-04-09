@@ -116,15 +116,35 @@
     {{ total_count > 0 and on_count == total_count }}
   id: lights_all_on
 
-- trigger: template
+- trigger: state
   alias: "[[trigger.managed_light_switched_to_color_mode]]"
-  value_template: >-
-    {% set helper_on = auto_mode_input_entity not in ['', none] and is_state(auto_mode_input_entity, 'on') %}
-    {% set on_lights = expand(expanded_light_entities) | selectattr('state', 'eq', 'on') | list %}
-    {% set color_lights = on_lights
-       | rejectattr('attributes.color_mode', 'in', [none, 'unknown', 'unavailable', 'color_temp', 'white', 'brightness', 'onoff'])
-       | list %}
-    {{ (disable_on_color | bool) and helper_on and (color_lights | count > 0) }}
+  entity_id: "{{ managed_light_entities_var }}"
+  attribute: color_mode
+  id: lights_color_mode_active
+
+- trigger: state
+  entity_id: "{{ managed_light_entities_var }}"
+  attribute: hs_color
+  id: lights_color_mode_active
+
+- trigger: state
+  entity_id: "{{ managed_light_entities_var }}"
+  attribute: xy_color
+  id: lights_color_mode_active
+
+- trigger: state
+  entity_id: "{{ managed_light_entities_var }}"
+  attribute: rgb_color
+  id: lights_color_mode_active
+
+- trigger: state
+  entity_id: "{{ managed_light_entities_var }}"
+  attribute: rgbw_color
+  id: lights_color_mode_active
+
+- trigger: state
+  entity_id: "{{ managed_light_entities_var }}"
+  attribute: rgbww_color
   id: lights_color_mode_active
 
 - trigger: template

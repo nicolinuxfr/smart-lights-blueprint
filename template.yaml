@@ -19,6 +19,40 @@ trace:
 
 trigger_variables:
   control_entities_off_var: !input control_entities_off
+  managed_light_entities_var: >-
+    {% set target = !input lights %}
+    {% set ns = namespace(entities=[]) %}
+    {% if target.entity_id is defined %}
+      {% set ids = [target.entity_id] if target.entity_id is string else target.entity_id %}
+      {% for current_id in ids %}
+        {% set member_ids = state_attr(current_id, 'entity_id') %}
+        {% if member_ids is string %}
+          {% set member_ids = [member_ids] %}
+        {% endif %}
+        {% if member_ids is sequence and member_ids is not string and (member_ids | count > 0) %}
+          {% set expanded_ids = expand(member_ids) | map(attribute='entity_id') | select('match', 'light\\.') | list %}
+          {% set fallback_ids = member_ids | select('match', 'light\\.') | list %}
+          {% set ns.entities = ns.entities + (expanded_ids if (expanded_ids | count > 0) else fallback_ids) %}
+        {% else %}
+          {% set expanded_ids = expand([current_id]) | map(attribute='entity_id') | select('match', 'light\\.') | list %}
+          {% set fallback_ids = [current_id] | select('match', 'light\\.') | list %}
+          {% set ns.entities = ns.entities + (expanded_ids if (expanded_ids | count > 0) else fallback_ids) %}
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+    {% if target.area_id is defined %}
+      {% set areas = [target.area_id] if target.area_id is string else target.area_id %}
+      {% for current_area in areas %}
+        {% set ns.entities = ns.entities + (area_entities(current_area) | select('match', 'light\\.') | list) %}
+      {% endfor %}
+    {% endif %}
+    {% if target.device_id is defined %}
+      {% set devices = [target.device_id] if target.device_id is string else target.device_id %}
+      {% for current_device in devices %}
+        {% set ns.entities = ns.entities + (device_entities(current_device) | select('match', 'light\\.') | list) %}
+      {% endfor %}
+    {% endif %}
+    {{ ns.entities | unique | list }}
 
 variables:
   [[include:variables.yaml]]
@@ -241,9 +275,17 @@ action:
               - stop: "Restored control entity after all lights turned off"
 
       - conditions:
+          - "{{ disable_on_color | bool }}"
+          - >
+            {{ auto_mode_input_entity not in ['', none]
+               and is_state(auto_mode_input_entity, 'on') }}
           - condition: trigger
             id:
               - lights_color_mode_active
+          - >
+            {{ trigger.to_state is not none
+               and trigger.to_state.state == 'on'
+               and trigger.to_state.attributes.color_mode not in [none, 'unknown', 'unavailable', 'color_temp', 'white', 'brightness', 'onoff'] }}
         sequence:
           - action: input_boolean.turn_off
             target:
@@ -265,7 +307,20 @@ action:
                    | selectattr('state', 'eq', 'on')
                    | map(attribute='entity_id')
                    | list }}
+              color_mode_lights: >
+                {{ expand(expanded_light_entities)
+                   | selectattr('state', 'eq', 'on')
+                   | rejectattr('attributes.color_mode', 'in', [none, 'unknown', 'unavailable', 'color_temp', 'white', 'brightness', 'onoff'])
+                   | map(attribute='entity_id')
+                   | list }}
           - condition: "{{ on_lights | count > 0 }}"
+          - if:
+              - "{{ (disable_on_color | bool) and (color_mode_lights | count > 0) }}"
+            then:
+              - action: input_boolean.turn_off
+                target:
+                  entity_id: "{{ auto_mode_input_entity }}"
+              - stop: "Disabled control entity because a managed light is already in color mode"
           - delay:
               milliseconds: 200
           - variables:
@@ -312,7 +367,20 @@ action:
                    | selectattr('state', 'eq', 'on')
                    | map(attribute='entity_id')
                    | list }}
+              color_mode_lights: >
+                {{ expand(expanded_light_entities)
+                   | selectattr('state', 'eq', 'on')
+                   | rejectattr('attributes.color_mode', 'in', [none, 'unknown', 'unavailable', 'color_temp', 'white', 'brightness', 'onoff'])
+                   | map(attribute='entity_id')
+                   | list }}
           - condition: "{{ on_lights | count > 0 }}"
+          - if:
+              - "{{ (disable_on_color | bool) and (color_mode_lights | count > 0) }}"
+            then:
+              - action: input_boolean.turn_off
+                target:
+                  entity_id: "{{ auto_mode_input_entity }}"
+              - stop: "Disabled control entity because a managed light is in color mode"
           - variables:
               [[include:adaptive_variables.yaml]]
           - repeat:
