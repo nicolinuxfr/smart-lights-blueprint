@@ -248,69 +248,79 @@ action:
           - condition: trigger
             id:
               - lights_color_mode_active
-              - lights_color_commanded
         sequence:
-          - if:
-              - "{{ trigger.id == 'lights_color_commanded' }}"
-            then:
-              - variables:
-                  service_data: >-
-                    {{ trigger.event.data.service_data
-                       if trigger.event is defined
-                       and trigger.event.data is defined
-                       and trigger.event.data.service_data is defined
-                       else dict() }}
-                  nested_target: >-
-                    {{ service_data.target
-                       if service_data is mapping and service_data.target is defined
-                       else dict() }}
-                  raw_entity_ids: >-
-                    {% set value = service_data.entity_id
-                       if service_data is mapping and service_data.entity_id is defined
-                       else (nested_target.entity_id if nested_target is mapping and nested_target.entity_id is defined else []) %}
-                    {{ [value] if value is string else (value if value is sequence else []) }}
-                  raw_area_ids: >-
-                    {% set value = service_data.area_id
-                       if service_data is mapping and service_data.area_id is defined
-                       else (nested_target.area_id if nested_target is mapping and nested_target.area_id is defined else []) %}
-                    {{ [value] if value is string else (value if value is sequence else []) }}
-                  raw_device_ids: >-
-                    {% set value = service_data.device_id
-                       if service_data is mapping and service_data.device_id is defined
-                       else (nested_target.device_id if nested_target is mapping and nested_target.device_id is defined else []) %}
-                    {{ [value] if value is string else (value if value is sequence else []) }}
-                  targeted_light_entities: >-
-                    {% set ns = namespace(entities=[]) %}
-                    {% if raw_entity_ids | count > 0 %}
-                      {% set expanded_ids = expand(raw_entity_ids) | map(attribute='entity_id') | select('match', 'light\\.') | list %}
-                      {% set fallback_ids = raw_entity_ids | select('match', 'light\\.') | list %}
-                      {% set ns.entities = ns.entities + (expanded_ids if (expanded_ids | count > 0) else fallback_ids) %}
-                    {% endif %}
-                    {% for current_area in raw_area_ids %}
-                      {% set ns.entities = ns.entities + (area_entities(current_area) | select('match', 'light\\.') | list) %}
-                    {% endfor %}
-                    {% for current_device in raw_device_ids %}
-                      {% set ns.entities = ns.entities + (device_entities(current_device) | select('match', 'light\\.') | list) %}
-                    {% endfor %}
-                    {{ ns.entities | unique | list }}
-                  targeted_managed_lights: >-
-                    {{ targeted_light_entities | select('in', expanded_light_entities) | list }}
-                  has_color_command: >-
-                    {% set ns = namespace(found=false) %}
-                    {% for key in ['hs_color', 'rgb_color', 'rgbw_color', 'rgbww_color', 'xy_color', 'color_name', 'color'] %}
-                      {% set value = service_data[key] if service_data is mapping and key in service_data else none %}
-                      {% if value is string and value | trim != '' %}
-                        {% set ns.found = true %}
-                      {% elif value is sequence and value is not string and (value | count > 0) %}
-                        {% set ns.found = true %}
-                      {% endif %}
-                    {% endfor %}
-                    {{ ns.found }}
-              - condition: "{{ (has_color_command | bool) and (targeted_managed_lights | count > 0) }}"
           - action: input_boolean.turn_off
             target:
               entity_id: "{{ auto_mode_input_entity }}"
           - stop: "Handled color mode change"
+
+      - conditions:
+          - "{{ disable_on_color | bool }}"
+          - >
+            {{ auto_mode_input_entity not in ['', none]
+               and is_state(auto_mode_input_entity, 'on') }}
+          - condition: trigger
+            id:
+              - lights_color_commanded
+        sequence:
+          - variables:
+              service_data: >-
+                {{ trigger.event.data.service_data
+                   if trigger.event is defined
+                   and trigger.event.data is defined
+                   and trigger.event.data.service_data is defined
+                   else dict() }}
+              nested_target: >-
+                {{ service_data.target
+                   if service_data is mapping and service_data.target is defined
+                   else dict() }}
+              raw_entity_ids: >-
+                {% set value = service_data.entity_id
+                   if service_data is mapping and service_data.entity_id is defined
+                   else (nested_target.entity_id if nested_target is mapping and nested_target.entity_id is defined else []) %}
+                {{ [value] if value is string else (value if value is sequence else []) }}
+              raw_area_ids: >-
+                {% set value = service_data.area_id
+                   if service_data is mapping and service_data.area_id is defined
+                   else (nested_target.area_id if nested_target is mapping and nested_target.area_id is defined else []) %}
+                {{ [value] if value is string else (value if value is sequence else []) }}
+              raw_device_ids: >-
+                {% set value = service_data.device_id
+                   if service_data is mapping and service_data.device_id is defined
+                   else (nested_target.device_id if nested_target is mapping and nested_target.device_id is defined else []) %}
+                {{ [value] if value is string else (value if value is sequence else []) }}
+              targeted_light_entities: >-
+                {% set ns = namespace(entities=[]) %}
+                {% if raw_entity_ids | count > 0 %}
+                  {% set expanded_ids = expand(raw_entity_ids) | map(attribute='entity_id') | select('match', 'light\\.') | list %}
+                  {% set fallback_ids = raw_entity_ids | select('match', 'light\\.') | list %}
+                  {% set ns.entities = ns.entities + (expanded_ids if (expanded_ids | count > 0) else fallback_ids) %}
+                {% endif %}
+                {% for current_area in raw_area_ids %}
+                  {% set ns.entities = ns.entities + (area_entities(current_area) | select('match', 'light\\.') | list) %}
+                {% endfor %}
+                {% for current_device in raw_device_ids %}
+                  {% set ns.entities = ns.entities + (device_entities(current_device) | select('match', 'light\\.') | list) %}
+                {% endfor %}
+                {{ ns.entities | unique | list }}
+              targeted_managed_lights: >-
+                {{ targeted_light_entities | select('in', expanded_light_entities) | list }}
+              has_color_command: >-
+                {% set ns = namespace(found=false) %}
+                {% for key in ['hs_color', 'rgb_color', 'rgbw_color', 'rgbww_color', 'xy_color', 'color_name', 'color'] %}
+                  {% set value = service_data[key] if service_data is mapping and key in service_data else none %}
+                  {% if value is string and value | trim != '' %}
+                    {% set ns.found = true %}
+                  {% elif value is sequence and value is not string and (value | count > 0) %}
+                    {% set ns.found = true %}
+                  {% endif %}
+                {% endfor %}
+                {{ ns.found }}
+          - condition: "{{ (has_color_command | bool) and (targeted_managed_lights | count > 0) }}"
+          - action: input_boolean.turn_off
+            target:
+              entity_id: "{{ auto_mode_input_entity }}"
+          - stop: "Handled color mode command"
 
       - conditions:
           - "{{ enable_adaptive | bool }}"
