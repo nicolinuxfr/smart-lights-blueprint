@@ -72,12 +72,12 @@
           {% endif %}
           {{ ns.entities | unique | list }}
         color_service_requested: >-
-          {{ service_data.rgb_color is defined
-             or service_data.rgbw_color is defined
-             or service_data.rgbww_color is defined
-             or service_data.hs_color is defined
-             or service_data.xy_color is defined
-             or service_data.color_name is defined }}
+          {{ (service_data.rgb_color is defined and service_data.rgb_color not in [none, '', []])
+             or (service_data.rgbw_color is defined and service_data.rgbw_color not in [none, '', []])
+             or (service_data.rgbww_color is defined and service_data.rgbww_color not in [none, '', []])
+             or (service_data.hs_color is defined and service_data.hs_color not in [none, '', []])
+             or (service_data.xy_color is defined and service_data.xy_color not in [none, '', []])
+             or (service_data.color_name is defined and service_data.color_name not in [none, '']) }}
         managed_color_service_targeted: >-
           {{ service_target_entities
              | select('in', expanded_light_entities)
