@@ -123,18 +123,20 @@
     {% for current_light in expanded_light_entities %}
       {% if is_state(current_light, 'on') %}
         {% set current_mode = state_attr(current_light, 'color_mode') %}
-        {% set has_color_attrs = state_attr(current_light, 'hs_color') is not none
-           or state_attr(current_light, 'rgb_color') is not none
-           or state_attr(current_light, 'rgbw_color') is not none
-           or state_attr(current_light, 'rgbww_color') is not none
-           or state_attr(current_light, 'xy_color') is not none %}
-        {% if current_mode not in [none, 'unknown', 'unavailable', 'color_temp', 'white', 'brightness', 'onoff'] or has_color_attrs %}
+        {% if current_mode not in [none, 'unknown', 'unavailable', 'color_temp', 'white', 'brightness', 'onoff'] %}
           {% set ns.color_lights = ns.color_lights + [current_light] %}
         {% endif %}
       {% endif %}
     {% endfor %}
     {{ (ns.color_lights | count) > 0 }}
   id: lights_color_mode_active
+
+- trigger: event
+  event_type: call_service
+  event_data:
+    domain: light
+    service: turn_on
+  id: lights_color_commanded
 
 - trigger: template
   alias: "[[trigger.all_managed_lights_turned_off]]"
