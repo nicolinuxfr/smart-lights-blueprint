@@ -72,7 +72,8 @@
           {% endif %}
           {{ ns.entities | unique | list }}
         color_service_requested: >-
-          {{ (service_data.rgb_color is defined and service_data.rgb_color not in [none, '', []])
+          {{ (service_data.color is defined and service_data.color not in [none, ''])
+             or (service_data.rgb_color is defined and service_data.rgb_color not in [none, '', []])
              or (service_data.rgbw_color is defined and service_data.rgbw_color not in [none, '', []])
              or (service_data.rgbww_color is defined and service_data.rgbww_color not in [none, '', []])
              or (service_data.hs_color is defined and service_data.hs_color not in [none, '', []])
