@@ -241,20 +241,6 @@ action:
               - stop: "Restored control entity after all lights turned off"
 
       - conditions:
-          - "{{ disable_on_color | bool }}"
-          - >
-            {{ auto_mode_input_entity not in ['', none]
-               and is_state(auto_mode_input_entity, 'on') }}
-          - condition: trigger
-            id:
-              - lights_color_mode_active
-        sequence:
-          - action: input_boolean.turn_off
-            target:
-              entity_id: "{{ auto_mode_input_entity }}"
-          - stop: "Handled color mode change"
-
-      - conditions:
           - "{{ enable_adaptive | bool }}"
           - condition: trigger
             id:
@@ -269,20 +255,7 @@ action:
                    | selectattr('state', 'eq', 'on')
                    | map(attribute='entity_id')
                    | list }}
-              color_mode_lights: >
-                {{ expand(expanded_light_entities)
-                   | selectattr('state', 'eq', 'on')
-                   | rejectattr('attributes.color_mode', 'in', [none, 'unknown', 'unavailable', 'color_temp', 'white', 'brightness', 'onoff'])
-                   | map(attribute='entity_id')
-                   | list }}
           - condition: "{{ on_lights | count > 0 }}"
-          - if:
-              - "{{ (disable_on_color | bool) and (color_mode_lights | count > 0) }}"
-            then:
-              - action: input_boolean.turn_off
-                target:
-                  entity_id: "{{ auto_mode_input_entity }}"
-              - stop: "Disabled control entity because a managed light is already in color mode"
           - delay:
               milliseconds: 200
           - variables:
@@ -337,12 +310,14 @@ action:
                    | list }}
           - condition: "{{ on_lights | count > 0 }}"
           - if:
-              - "{{ (disable_on_color | bool) and (color_mode_lights | count > 0) }}"
+              - "{{ trigger.id == 'tick' }}"
+              - "{{ disable_on_color | bool }}"
+              - "{{ color_mode_lights | count > 0 }}"
             then:
               - action: input_boolean.turn_off
                 target:
                   entity_id: "{{ auto_mode_input_entity }}"
-              - stop: "Disabled control entity because a managed light is in color mode"
+              - stop: "Disabled control entity on tick because a managed light is in color mode"
           - variables:
               [[include:adaptive_variables.yaml]]
           - repeat:

@@ -117,16 +117,6 @@
   id: lights_all_on
 
 - trigger: template
-  alias: "[[trigger.managed_light_switched_to_color_mode]]"
-  value_template: >-
-    {{ expand(expanded_light_entities)
-       | selectattr('state', 'eq', 'on')
-       | rejectattr('attributes.color_mode', 'in', [none, 'unknown', 'unavailable', 'color_temp', 'white', 'brightness', 'onoff'])
-       | list
-       | count > 0 }}
-  id: lights_color_mode_active
-
-- trigger: template
   alias: "[[trigger.all_managed_lights_turned_off]]"
   value_template: >-
     {{ expand(expanded_light_entities)
