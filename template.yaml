@@ -172,8 +172,16 @@ action:
                        | map(attribute='entity_id')
                        | list }}
               [[include:adaptive_light_turn_on.yaml]]
-              - delay:
-                  milliseconds: 700
+              - wait_template: >-
+                  {{ expand(target_lights)
+                     | selectattr('state', 'eq', 'on')
+                     | rejectattr('attributes.color_mode', 'in', ['xy', 'hs', 'rgb', 'rgbw', 'rgbww'])
+                     | list | count
+                     ==
+                     (expand(target_lights) | selectattr('state', 'eq', 'on') | list | count) }}
+                timeout:
+                  seconds: 2
+                continue_on_timeout: true
           - action: light.turn_off
             target: !input lights
 
@@ -234,8 +242,16 @@ action:
                            | map(attribute='entity_id')
                            | list }}
                   [[include:adaptive_light_turn_on.yaml]]
-                  - delay:
-                      milliseconds: 700
+                  - wait_template: >-
+                      {{ expand(target_lights)
+                         | selectattr('state', 'eq', 'on')
+                         | rejectattr('attributes.color_mode', 'in', ['xy', 'hs', 'rgb', 'rgbw', 'rgbww'])
+                         | list | count
+                         ==
+                         (expand(target_lights) | selectattr('state', 'eq', 'on') | list | count) }}
+                    timeout:
+                      seconds: 2
+                    continue_on_timeout: true
               - action: light.turn_off
                 target: !input lights
             else:
