@@ -17,7 +17,9 @@ variables:
     {{ has_brightness_attr
        or (modes_count == 0)
        or not onoff_only }}
-  prefers_mired_ct: "{{ has_ct_attr and not has_ct_kelvin_attr }}"
+  prefers_mired_ct: >
+    {{ (has_ct_attr or ('color_temp' in modes))
+       and not has_ct_kelvin_attr }}
   force_ct_mode_switch: >
     {{ current_color_mode in ['xy', 'hs', 'rgb', 'rgbw', 'rgbww'] }}
   clamped_kelvin: >
