@@ -36,7 +36,7 @@
                 target:
                   entity_id: "{{ current_light }}"
                 data:
-                  transition: 1
+                  transition: 0
                   brightness_pct: "{{ effective_brightness | int(0) }}"
                   color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
           - conditions:
@@ -47,7 +47,7 @@
                 target:
                   entity_id: "{{ current_light }}"
                 data:
-                  transition: 1
+                  transition: 0
                   brightness_pct: "{{ effective_brightness | int(0) }}"
           - conditions:
               - "{{ supports_ct | bool }}"
@@ -57,7 +57,7 @@
                 target:
                   entity_id: "{{ current_light }}"
                 data:
-                  transition: 1
+                  transition: 0
                   color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
         default:
           - action: light.turn_on
