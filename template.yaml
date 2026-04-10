@@ -151,6 +151,27 @@ action:
                 {% endif %}
           - condition: "{{ off_conditions_still_met | bool }}"
           - condition: "{{ sensors_clear | bool }}"
+          - variables:
+              restore_white_before_off: >-
+                {{ (restore_on_off | bool)
+                   and (enable_adaptive | bool)
+                   and auto_mode_input_entity not in ['', none]
+                   and auto_mode_input_entity.startswith('input_boolean.')
+                   and is_state(auto_mode_input_entity, 'off') }}
+          - if:
+              - "{{ restore_white_before_off | bool }}"
+            then:
+              - variables:
+                  [[include:adaptive_variables.yaml]]
+              - variables:
+                  effective_brightness: 1
+                  effective_kelvin: 1
+                  target_lights: >-
+                    {{ expand(expanded_light_entities)
+                       | selectattr('state', 'eq', 'on')
+                       | map(attribute='entity_id')
+                       | list }}
+              [[include:adaptive_light_turn_on.yaml]]
           - action: light.turn_off
             target: !input lights
 
@@ -190,6 +211,27 @@ action:
               - "{{ switch_turning_off | bool }}"
               - "{{ not (all_target_lights_off | bool) }}"
             then:
+              - variables:
+                  restore_white_before_off: >-
+                    {{ (restore_on_off | bool)
+                       and (enable_adaptive | bool)
+                       and auto_mode_input_entity not in ['', none]
+                       and auto_mode_input_entity.startswith('input_boolean.')
+                       and is_state(auto_mode_input_entity, 'off') }}
+              - if:
+                  - "{{ restore_white_before_off | bool }}"
+                then:
+                  - variables:
+                      [[include:adaptive_variables.yaml]]
+                  - variables:
+                      effective_brightness: 1
+                      effective_kelvin: 1
+                      target_lights: >-
+                        {{ expand(expanded_light_entities)
+                           | selectattr('state', 'eq', 'on')
+                           | map(attribute='entity_id')
+                           | list }}
+                  [[include:adaptive_light_turn_on.yaml]]
               - action: light.turn_off
                 target: !input lights
             else:
@@ -424,7 +466,7 @@ action:
                           target:
                             entity_id: "{{ current_light }}"
                           data:
-                            transition: 0
+                            transition: 1
                             brightness_pct: "{{ effective_brightness | int(0) }}"
                             color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
                     - conditions:
@@ -435,7 +477,7 @@ action:
                           target:
                             entity_id: "{{ current_light }}"
                           data:
-                            transition: 0
+                            transition: 1
                             brightness_pct: "{{ effective_brightness | int(0) }}"
                     - conditions:
                         - "{{ supports_ct | bool }}"
@@ -445,7 +487,7 @@ action:
                           target:
                             entity_id: "{{ current_light }}"
                           data:
-                            transition: 0
+                            transition: 1
                             color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
                   default:
                     - action: light.turn_on
@@ -453,4 +495,4 @@ action:
                       target:
                         entity_id: "{{ current_light }}"
                       data:
-                        transition: 0
+                        transition: 1
