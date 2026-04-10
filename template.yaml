@@ -381,6 +381,14 @@ action:
                    | list }}
           - condition: "{{ on_lights | count > 0 }}"
           - if:
+              - "{{ trigger.id == 'auto_mode_enabled' }}"
+            then:
+              - variables:
+                  target_lights: "{{ on_lights }}"
+              [[include:adaptive_force_white_mode_switch.yaml]]
+              - delay:
+                  milliseconds: 350
+          - if:
               - "{{ trigger.id == 'tick' }}"
               - "{{ disable_on_color | bool }}"
               - "{{ color_mode_lights | count > 0 }}"
