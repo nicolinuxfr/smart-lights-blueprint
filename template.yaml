@@ -165,7 +165,6 @@ action:
                   [[include:adaptive_variables.yaml]]
               - variables:
                   effective_brightness: 1
-                  effective_kelvin: 1
                   target_lights: >-
                     {{ expand(expanded_light_entities)
                        | selectattr('state', 'eq', 'on')
@@ -235,7 +234,6 @@ action:
                       [[include:adaptive_variables.yaml]]
                   - variables:
                       effective_brightness: 1
-                      effective_kelvin: 1
                       target_lights: >-
                         {{ expand(expanded_light_entities)
                            | selectattr('state', 'eq', 'on')
