@@ -27,16 +27,6 @@
             {{ (1000000 / [clamped_kelvin | float(1), 1] | max) | round(0) | int }}
       - choose:
           - conditions:
-              - "{{ (supports_ct | bool) and (prefers_mired_ct | bool) }}"
-            sequence:
-              - action: light.turn_on
-                continue_on_error: true
-                target:
-                  entity_id: "{{ current_light }}"
-                data:
-                  transition: 0
-                  color_temp: "{{ clamped_mired | int(0) }}"
-          - conditions:
               - "{{ supports_ct | bool }}"
             sequence:
               - action: light.turn_on

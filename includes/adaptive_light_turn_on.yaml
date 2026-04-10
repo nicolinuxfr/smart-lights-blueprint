@@ -45,7 +45,7 @@
                   entity_id: "{{ current_light }}"
                 data:
                   transition: 0
-                  color_temp: "{{ clamped_mired | int(0) }}"
+                  color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
               - action: light.turn_on
                 continue_on_error: true
                 target:
@@ -53,7 +53,7 @@
                 data:
                   transition: 1
                   brightness_pct: "{{ effective_brightness | int(0) }}"
-                  color_temp: "{{ clamped_mired | int(0) }}"
+                  color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
           - conditions:
               - "{{ (supports_brightness | bool) and (supports_ct | bool) and (force_ct_mode_switch | bool) }}"
             sequence:
@@ -82,7 +82,7 @@
                 data:
                   transition: 1
                   brightness_pct: "{{ effective_brightness | int(0) }}"
-                  color_temp: "{{ clamped_mired | int(0) }}"
+                  color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
           - conditions:
               - "{{ (supports_brightness | bool) and (supports_ct | bool) }}"
             sequence:
@@ -113,7 +113,7 @@
                   entity_id: "{{ current_light }}"
                 data:
                   transition: 0
-                  color_temp: "{{ clamped_mired | int(0) }}"
+                  color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
           - conditions:
               - "{{ (supports_ct | bool) and (force_ct_mode_switch | bool) }}"
             sequence:
@@ -133,7 +133,7 @@
                   entity_id: "{{ current_light }}"
                 data:
                   transition: 1
-                  color_temp: "{{ clamped_mired | int(0) }}"
+                  color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
           - conditions:
               - "{{ supports_ct | bool }}"
             sequence:

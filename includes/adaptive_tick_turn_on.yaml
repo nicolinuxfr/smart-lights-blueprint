@@ -14,7 +14,7 @@
             entity_id: "{{ current_light }}"
           data:
             transition: 0
-            color_temp: "{{ clamped_mired | int(0) }}"
+            color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
         - action: light.turn_on
           continue_on_error: true
           target:
@@ -22,7 +22,7 @@
           data:
             transition: 15
             brightness_pct: "{{ effective_brightness | int(0) }}"
-            color_temp: "{{ clamped_mired | int(0) }}"
+            color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
     - conditions:
         - >
           {{ trigger.id == 'tick'
@@ -61,7 +61,7 @@
           data:
             transition: 15
             brightness_pct: "{{ effective_brightness | int(0) }}"
-            color_temp: "{{ clamped_mired | int(0) }}"
+            color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
     - conditions:
         - >
           {{ trigger.id == 'tick'
@@ -93,7 +93,7 @@
             entity_id: "{{ current_light }}"
           data:
             transition: 0
-            color_temp: "{{ clamped_mired | int(0) }}"
+            color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
         - action: light.turn_on
           continue_on_error: true
           target:
@@ -101,7 +101,7 @@
           data:
             transition: 15
             brightness_pct: "{{ effective_brightness | int(0) if night_adaptive_active else current_brightness_pct | int(0) }}"
-            color_temp: "{{ clamped_mired | int(0) }}"
+            color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
     - conditions:
         - >
           {{ trigger.id == 'tick'
@@ -142,7 +142,7 @@
           data:
             transition: 15
             brightness_pct: "{{ effective_brightness | int(0) if night_adaptive_active else current_brightness_pct | int(0) }}"
-            color_temp: "{{ clamped_mired | int(0) }}"
+            color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
     - conditions:
         - >
           {{ trigger.id == 'tick'
