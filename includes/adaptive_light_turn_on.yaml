@@ -4,30 +4,55 @@
       - variables:
           current_light: "{{ repeat.item }}"
       - variables:
-          modes: "{{ state_attr(current_light, 'supported_color_modes') or [] }}"
-          modes_count: "{{ modes | count }}"
-          min_k: "{{ state_attr(current_light, 'min_color_temp_kelvin') | float(0) }}"
-          max_k: "{{ state_attr(current_light, 'max_color_temp_kelvin') | float(0) }}"
-          has_brightness_attr: "{{ state_attr(current_light, 'brightness') is not none }}"
-          has_ct_kelvin_attr: "{{ state_attr(current_light, 'color_temp_kelvin') is not none }}"
-          has_ct_attr: "{{ state_attr(current_light, 'color_temp') is not none }}"
-          onoff_only: "{{ (modes_count == 1) and (modes[0] == 'onoff') }}"
-          supports_ct: >
-            {{ 'color_temp' in modes
-               or (min_k > 0 and max_k > 0)
-               or has_ct_kelvin_attr
-               or has_ct_attr }}
-          supports_brightness: >
-            {{ has_brightness_attr
-               or (modes_count == 0)
-               or not onoff_only }}
-          clamped_kelvin: >
-            {% if min_k > 0 and max_k > 0 %}
-              {{ [min_k, [effective_kelvin | float(0), max_k] | min] | max | round(0) | int }}
-            {% else %}
-              {{ effective_kelvin | int(0) }}
-            {% endif %}
+          [[include:adaptive_light_common_variables.yaml]]
       - choose:
+          - conditions:
+              - "{{ (supports_brightness | bool) and (supports_ct | bool) and (force_ct_mode_switch | bool) and (prefers_mired_ct | bool) }}"
+            sequence:
+              - action: light.turn_on
+                continue_on_error: true
+                target:
+                  entity_id: "{{ current_light }}"
+                data:
+                  transition: 0
+                  color_temp: "{{ clamped_mired | int(0) }}"
+              - action: light.turn_on
+                continue_on_error: true
+                target:
+                  entity_id: "{{ current_light }}"
+                data:
+                  transition: 1
+                  brightness_pct: "{{ effective_brightness | int(0) }}"
+                  color_temp: "{{ clamped_mired | int(0) }}"
+          - conditions:
+              - "{{ (supports_brightness | bool) and (supports_ct | bool) and (force_ct_mode_switch | bool) }}"
+            sequence:
+              - action: light.turn_on
+                continue_on_error: true
+                target:
+                  entity_id: "{{ current_light }}"
+                data:
+                  transition: 0
+                  color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+              - action: light.turn_on
+                continue_on_error: true
+                target:
+                  entity_id: "{{ current_light }}"
+                data:
+                  transition: 1
+                  brightness_pct: "{{ effective_brightness | int(0) }}"
+                  color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+          - conditions:
+              - "{{ (supports_brightness | bool) and (supports_ct | bool) and (prefers_mired_ct | bool) }}"
+            sequence:
+              - action: light.turn_on
+                continue_on_error: true
+                target:
+                  entity_id: "{{ current_light }}"
+                data:
+                  transition: 1
+                  brightness_pct: "{{ effective_brightness | int(0) }}"
+                  color_temp: "{{ clamped_mired | int(0) }}"
           - conditions:
               - "{{ (supports_brightness | bool) and (supports_ct | bool) }}"
             sequence:
@@ -49,6 +74,36 @@
                 data:
                   transition: 1
                   brightness_pct: "{{ effective_brightness | int(0) }}"
+          - conditions:
+              - "{{ (supports_ct | bool) and (force_ct_mode_switch | bool) and (prefers_mired_ct | bool) }}"
+            sequence:
+              - action: light.turn_on
+                continue_on_error: true
+                target:
+                  entity_id: "{{ current_light }}"
+                data:
+                  transition: 0
+                  color_temp: "{{ clamped_mired | int(0) }}"
+          - conditions:
+              - "{{ (supports_ct | bool) and (force_ct_mode_switch | bool) }}"
+            sequence:
+              - action: light.turn_on
+                continue_on_error: true
+                target:
+                  entity_id: "{{ current_light }}"
+                data:
+                  transition: 0
+                  color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+          - conditions:
+              - "{{ (supports_ct | bool) and (prefers_mired_ct | bool) }}"
+            sequence:
+              - action: light.turn_on
+                continue_on_error: true
+                target:
+                  entity_id: "{{ current_light }}"
+                data:
+                  transition: 1
+                  color_temp: "{{ clamped_mired | int(0) }}"
           - conditions:
               - "{{ supports_ct | bool }}"
             sequence:

@@ -1,0 +1,161 @@
+- choose:
+    - conditions:
+        - >
+          {{ trigger.id == 'tick'
+             and (supports_brightness | bool)
+             and (supports_ct | bool)
+             and (force_ct_mode_switch | bool)
+             and (prefers_mired_ct | bool)
+             and (recently_turned_on | bool) }}
+      sequence:
+        - action: light.turn_on
+          continue_on_error: true
+          target:
+            entity_id: "{{ current_light }}"
+          data:
+            transition: 0
+            color_temp: "{{ clamped_mired | int(0) }}"
+        - action: light.turn_on
+          continue_on_error: true
+          target:
+            entity_id: "{{ current_light }}"
+          data:
+            transition: 15
+            brightness_pct: "{{ effective_brightness | int(0) }}"
+            color_temp: "{{ clamped_mired | int(0) }}"
+    - conditions:
+        - >
+          {{ trigger.id == 'tick'
+             and (supports_brightness | bool)
+             and (supports_ct | bool)
+             and (force_ct_mode_switch | bool)
+             and (recently_turned_on | bool) }}
+      sequence:
+        - action: light.turn_on
+          continue_on_error: true
+          target:
+            entity_id: "{{ current_light }}"
+          data:
+            transition: 0
+            color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+        - action: light.turn_on
+          continue_on_error: true
+          target:
+            entity_id: "{{ current_light }}"
+          data:
+            transition: 15
+            brightness_pct: "{{ effective_brightness | int(0) }}"
+            color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+    - conditions:
+        - >
+          {{ trigger.id == 'tick'
+             and (supports_brightness | bool)
+             and (supports_ct | bool)
+             and (prefers_mired_ct | bool)
+             and (recently_turned_on | bool) }}
+      sequence:
+        - action: light.turn_on
+          continue_on_error: true
+          target:
+            entity_id: "{{ current_light }}"
+          data:
+            transition: 15
+            brightness_pct: "{{ effective_brightness | int(0) }}"
+            color_temp: "{{ clamped_mired | int(0) }}"
+    - conditions:
+        - >
+          {{ trigger.id == 'tick'
+             and (supports_brightness | bool)
+             and (supports_ct | bool)
+             and not (recently_turned_on | bool)
+             and (tick_updates_brightness | bool) }}
+      sequence:
+        - action: light.turn_on
+          continue_on_error: true
+          target:
+            entity_id: "{{ current_light }}"
+          data:
+            transition: 15
+            brightness_pct: "{{ effective_brightness | int(0) }}"
+    - conditions:
+        - >
+          {{ trigger.id == 'tick'
+             and (supports_brightness | bool)
+             and (supports_ct | bool)
+             and not (recently_turned_on | bool)
+             and (force_ct_mode_switch | bool)
+             and (prefers_mired_ct | bool)
+             and not (tick_updates_brightness | bool) }}
+      sequence:
+        - action: light.turn_on
+          continue_on_error: true
+          target:
+            entity_id: "{{ current_light }}"
+          data:
+            transition: 0
+            color_temp: "{{ clamped_mired | int(0) }}"
+        - action: light.turn_on
+          continue_on_error: true
+          target:
+            entity_id: "{{ current_light }}"
+          data:
+            transition: 15
+            brightness_pct: "{{ effective_brightness | int(0) if night_adaptive_active else current_brightness_pct | int(0) }}"
+            color_temp: "{{ clamped_mired | int(0) }}"
+    - conditions:
+        - >
+          {{ trigger.id == 'tick'
+             and (supports_brightness | bool)
+             and (supports_ct | bool)
+             and not (recently_turned_on | bool)
+             and (force_ct_mode_switch | bool)
+             and not (tick_updates_brightness | bool) }}
+      sequence:
+        - action: light.turn_on
+          continue_on_error: true
+          target:
+            entity_id: "{{ current_light }}"
+          data:
+            transition: 0
+            color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+        - action: light.turn_on
+          continue_on_error: true
+          target:
+            entity_id: "{{ current_light }}"
+          data:
+            transition: 15
+            brightness_pct: "{{ effective_brightness | int(0) if night_adaptive_active else current_brightness_pct | int(0) }}"
+            color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+    - conditions:
+        - >
+          {{ trigger.id == 'tick'
+             and (supports_brightness | bool)
+             and (supports_ct | bool)
+             and not (recently_turned_on | bool)
+             and (prefers_mired_ct | bool)
+             and not (tick_updates_brightness | bool) }}
+      sequence:
+        - action: light.turn_on
+          continue_on_error: true
+          target:
+            entity_id: "{{ current_light }}"
+          data:
+            transition: 15
+            brightness_pct: "{{ effective_brightness | int(0) if night_adaptive_active else current_brightness_pct | int(0) }}"
+            color_temp: "{{ clamped_mired | int(0) }}"
+    - conditions:
+        - >
+          {{ trigger.id == 'tick'
+             and (supports_brightness | bool)
+             and (supports_ct | bool)
+             and not (recently_turned_on | bool)
+             and not (tick_updates_brightness | bool) }}
+      sequence:
+        - action: light.turn_on
+          continue_on_error: true
+          target:
+            entity_id: "{{ current_light }}"
+          data:
+            transition: 15
+            brightness_pct: "{{ effective_brightness | int(0) if night_adaptive_active else current_brightness_pct | int(0) }}"
+            color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
