@@ -171,6 +171,46 @@ action:
                        | map(attribute='entity_id')
                        | list }}
               [[include:adaptive_light_turn_on.yaml]]
+              - variables:
+                  stubborn_color_lights: >-
+                    {{ expand(target_lights)
+                       | selectattr('state', 'eq', 'on')
+                       | selectattr('attributes.color_mode', 'in', ['xy', 'hs', 'rgb', 'rgbw', 'rgbww'])
+                       | map(attribute='entity_id')
+                       | list }}
+              - if:
+                  - "{{ stubborn_color_lights | count > 0 }}"
+                then:
+                  - repeat:
+                      for_each: "{{ stubborn_color_lights }}"
+                      sequence:
+                        - variables:
+                            current_light: "{{ repeat.item }}"
+                        - variables:
+                            [[include:adaptive_light_common_variables.yaml]]
+                        - choose:
+                            - conditions:
+                                - "{{ (supports_ct | bool) and (prefers_mired_ct | bool) }}"
+                              sequence:
+                                - action: light.turn_on
+                                  continue_on_error: true
+                                  target:
+                                    entity_id: "{{ current_light }}"
+                                  data:
+                                    transition: 0
+                                    brightness_pct: 1
+                                    color_temp: "{{ clamped_mired | int(0) }}"
+                            - conditions:
+                                - "{{ supports_ct | bool }}"
+                              sequence:
+                                - action: light.turn_on
+                                  continue_on_error: true
+                                  target:
+                                    entity_id: "{{ current_light }}"
+                                  data:
+                                    transition: 0
+                                    brightness_pct: 1
+                                    color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
               - wait_template: >-
                   {{ expand(target_lights)
                      | selectattr('state', 'eq', 'on')
@@ -240,6 +280,46 @@ action:
                            | map(attribute='entity_id')
                            | list }}
                   [[include:adaptive_light_turn_on.yaml]]
+                  - variables:
+                      stubborn_color_lights: >-
+                        {{ expand(target_lights)
+                           | selectattr('state', 'eq', 'on')
+                           | selectattr('attributes.color_mode', 'in', ['xy', 'hs', 'rgb', 'rgbw', 'rgbww'])
+                           | map(attribute='entity_id')
+                           | list }}
+                  - if:
+                      - "{{ stubborn_color_lights | count > 0 }}"
+                    then:
+                      - repeat:
+                          for_each: "{{ stubborn_color_lights }}"
+                          sequence:
+                            - variables:
+                                current_light: "{{ repeat.item }}"
+                            - variables:
+                                [[include:adaptive_light_common_variables.yaml]]
+                            - choose:
+                                - conditions:
+                                    - "{{ (supports_ct | bool) and (prefers_mired_ct | bool) }}"
+                                  sequence:
+                                    - action: light.turn_on
+                                      continue_on_error: true
+                                      target:
+                                        entity_id: "{{ current_light }}"
+                                      data:
+                                        transition: 0
+                                        brightness_pct: 1
+                                        color_temp: "{{ clamped_mired | int(0) }}"
+                                - conditions:
+                                    - "{{ supports_ct | bool }}"
+                                  sequence:
+                                    - action: light.turn_on
+                                      continue_on_error: true
+                                      target:
+                                        entity_id: "{{ current_light }}"
+                                      data:
+                                        transition: 0
+                                        brightness_pct: 1
+                                        color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
                   - wait_template: >-
                       {{ expand(target_lights)
                          | selectattr('state', 'eq', 'on')
