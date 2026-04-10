@@ -391,27 +391,29 @@ action:
               - stop: "Disabled control entity on tick because a managed light is in color mode"
           - variables:
               [[include:adaptive_variables.yaml]]
-          - repeat:
-              for_each: "{{ on_lights }}"
-              sequence:
-                - variables:
-                    current_light: "{{ repeat.item }}"
-                - variables:
-                    [[include:adaptive_light_common_variables.yaml]]
-                    tick_updates_brightness: "{{ trigger.id == 'tick' and ((now_ts | int(0) // 300) % 2 == 0) }}"
-                    recently_turned_on: >
-                      {% set last_changed_ts = as_timestamp(states[current_light].last_changed) | float(0) %}
-                      {{ is_state(current_light, 'on') and ((now_ts | float(0)) - last_changed_ts) < 20 }}
-                    current_brightness_pct: >
-                      {% set b = state_attr(current_light, 'brightness') %}
-                      {% if b is not none %}
-                        {{ [1, [((b | float(0)) / 2.55) | round(0) | int, 100] | min] | max }}
-                      {% else %}
-                        {{ effective_brightness | int(0) }}
-                      {% endif %}
-                - if:
-                    - "{{ trigger.id == 'tick' }}"
-                  then:
+          - if:
+              - "{{ trigger.id == 'tick' }}"
+            then:
+              - repeat:
+                  for_each: "{{ on_lights }}"
+                  sequence:
+                    - variables:
+                        current_light: "{{ repeat.item }}"
+                    - variables:
+                        [[include:adaptive_light_common_variables.yaml]]
+                        tick_updates_brightness: "{{ ((now_ts | int(0) // 300) % 2 == 0) }}"
+                        recently_turned_on: >
+                          {% set last_changed_ts = as_timestamp(states[current_light].last_changed) | float(0) %}
+                          {{ is_state(current_light, 'on') and ((now_ts | float(0)) - last_changed_ts) < 20 }}
+                        current_brightness_pct: >
+                          {% set b = state_attr(current_light, 'brightness') %}
+                          {% if b is not none %}
+                            {{ [1, [((b | float(0)) / 2.55) | round(0) | int, 100] | min] | max }}
+                          {% else %}
+                            {{ effective_brightness | int(0) }}
+                          {% endif %}
                     [[include:adaptive_tick_turn_on.yaml]]
-                  else:
-                    [[include:adaptive_light_turn_on.yaml]]
+            else:
+              - variables:
+                  target_lights: "{{ on_lights }}"
+              [[include:adaptive_light_turn_on.yaml]]
