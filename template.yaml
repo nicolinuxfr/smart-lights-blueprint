@@ -172,6 +172,8 @@ action:
                        | map(attribute='entity_id')
                        | list }}
               [[include:adaptive_light_turn_on.yaml]]
+              - delay:
+                  milliseconds: 700
           - action: light.turn_off
             target: !input lights
 
@@ -232,6 +234,8 @@ action:
                            | map(attribute='entity_id')
                            | list }}
                   [[include:adaptive_light_turn_on.yaml]]
+                  - delay:
+                      milliseconds: 700
               - action: light.turn_off
                 target: !input lights
             else:
