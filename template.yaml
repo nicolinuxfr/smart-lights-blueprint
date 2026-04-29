@@ -438,6 +438,20 @@ action:
                  and trigger.event.data.new_state is not none
                  and (trigger.event.data.old_state is none
                     or trigger.event.data.old_state.state != trigger.event.data.new_state.state) }}
+            {% elif trigger.id == 'automations_reload_service' %}
+              {% set service_data = trigger.event.data.service_data
+                 if trigger.event is defined
+                 and trigger.event.data is defined
+                 and trigger.event.data.service_data is defined
+                 else {} %}
+              {% set reload_id = service_data.id | default(none) %}
+              {% set reload_entity = service_data.entity_id | default(none) %}
+              {% set current_id = this.attributes.id | default(none) %}
+              {{ reload_id == current_id
+                 or reload_entity == this.entity_id
+                 or (reload_entity is sequence
+                    and reload_entity is not string
+                    and this.entity_id in reload_entity) }}
             {% else %}
               true
             {% endif %}
