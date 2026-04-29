@@ -1,0 +1,2982 @@
+blueprint:
+  name: "Lumières intelligentes (2026.4.5)"
+  description: |-
+    Allume et éteint automatiquement des lumières en fonction de capteurs binaires (capteurs de mouvement, capteurs d'ouverture, etc.), avec un éclairage adaptatif optionnel qui ajuste la luminosité et la température de couleur en fonction de la position du soleil.
+
+    Version : 2026.4.5 — [Changelog](https://github.com/nicolinuxfr/smart-lights-blueprint/blob/main/CHANGELOG.md#202645)
+  domain: automation
+  homeassistant:
+    min_version: 2024.6.0
+  source_url: https://github.com/nicolinuxfr/smart-lights-blueprint/blob/main/template.yaml
+  input:
+    lights:
+      name: "Lumières"
+      description: "Les lumières à contrôler : une seule lumière, un groupe d'éclairages ou même une zone ou étiquette Home Assistant."
+      selector:
+        target:
+          entity:
+            domain: light
+    sensors:
+      name: "Capteurs d’allumage et extinction"
+      description: "Capteurs qui pilotent l'allumage et l'extinction automatique des lumières : fonctionne avec les capteurs de mouvements et présence, les portes et fenêtres ou tout autre type de capteur binaire. Laisser vide pour utiliser uniquement l'éclairage adaptatif dès que les lumières s'allument."
+      default: []
+      selector:
+        entity:
+          domain: binary_sensor
+          multiple: true
+    keep_on_open_doors:
+          name: "Maintenir la lumière avec les portes ouvertes"
+          description: "Par défaut, les capteurs de porte allument la lumière quand ils sont ouverts, mais ne les maintiennent pas allumées et elles s'éteindront après le délai défini. En activant cette option, les capteurs de porte sont traités comme les autres types et l'éclairage restera actif tant que les portes seront ouvertes."
+          default: false
+          selector:
+            boolean:
+    off_delay:
+      name: "Délai avant extinction"
+      description: "Délai avant d'éteindre les lumières quand les capteurs sélectionnés précédemment deviennent inactifs (plus de mouvements, porte fermée…). Si plusieurs capteurs sont sélectionnés, le délai ne commence que lorsque tous les capteurs sont inactifs."
+      default:
+        hours: 0
+        minutes: 2
+        seconds: 0
+      selector:
+        duration:
+    switch_entity:
+      name: "Allumage avec interrupteur"
+      description: "L'entité de type entrée logique sélectionnée ici allumera et éteindra les lumières, indépendamment de la situation. Utile pour utiliser un interrupteur physique : une autre automatisation peut basculer ce capteur pour allumer et éteindre les lumières. Son état est également automatiquement synchronisé avec celui des éclairages."
+      default: ""
+      selector:
+        entity:
+          domain: input_boolean
+    control_entities_off:
+      name: "Entités de contrôle"
+      description: "Les capteurs entrée logique sélectionnés doivent être désactivés pour que l'allumage et extinction automatique fonctionne. Peut servir pour désactiver l'automatisation en cas d'absence, par exemple."
+      default: []
+      selector:
+        entity:
+          domain: input_boolean
+          multiple: true
+    adaptive_section:
+      name: "Éclairage adaptatif"
+      icon: mdi:white-balance-sunny
+      description: "Adaptation optionnelle des éclairages tout au long de la journée."
+      collapsed: true
+      input:
+        enable_adaptive:
+          name: "Activer l'éclairage adaptatif"
+          description: "Ajuste automatiquement la luminosité et la température de couleur en fonction de la position du soleil tout au long de la journée."
+          default: false
+          selector:
+            boolean:
+        brightness_night:
+          name: "Luminosité minimale"
+          description: "Luminosité minimale autour du lever et du coucher du soleil."
+          default: 30
+          selector:
+            number:
+              min: 1
+              max: 100
+              step: 1
+              mode: slider
+              unit_of_measurement: "%"
+        brightness_day:
+          name: "Luminosité maximale"
+          description: "Luminosité maximale autour du milieu de journée."
+          default: 100
+          selector:
+            number:
+              min: 1
+              max: 100
+              step: 1
+              mode: slider
+              unit_of_measurement: "%"
+        kelvin_night:
+          name: "Température minimale"
+          description: "Température de blanc la plus chaude autour du lever et du coucher du soleil."
+          default: 2700
+          selector:
+            number:
+              min: 1800
+              max: 5000
+              step: 50
+              mode: slider
+              unit_of_measurement: K
+        kelvin_day:
+          name: "Température maximale"
+          description: "Température de blanc la plus froide autour du milieu de journée."
+          default: 5500
+          selector:
+            number:
+              min: 2200
+              max: 9000
+              step: 50
+              mode: slider
+              unit_of_measurement: K
+        night_adaptive_enabled:
+          name: "Réglages spécifiques la nuit"
+          description: "Par défaut, les valeurs minimales définies ci-dessus sont appliquées la nuit. En cochant cette option, les valeurs suivantes seront utilisées."
+          default: false
+          selector:
+            boolean:
+        night_mode_brightness:
+          name: "Luminosité spécifique la nuit"
+          description: "Luminosité appliquée la nuit quand l'option Réglages spécifiques la nuit est activée."
+          default: 20
+          selector:
+            number:
+              min: 1
+              max: 100
+              step: 1
+              mode: slider
+              unit_of_measurement: "%"
+        night_mode_kelvin:
+          name: "Température spécifique la nuit"
+          description: "Température de blanc appliquée la nuit quand l'option Réglages spécifiques la nuit est activée."
+          default: 2200
+          selector:
+            number:
+              min: 1800
+              max: 5000
+              step: 50
+              mode: slider
+              unit_of_measurement: K
+        auto_mode_boolean:
+          name: "Entité de contrôle"
+          description: "L'entrée logique sélectionnée doit être active pour que l'éclairage soit adapté. Quand elle est désactivée, les lumières restent sur le dernier réglage et sont toujours allumées et éteintes automatiquement d'après les réglages plus hauts. Utile pour arrêter l'éclairage adaptatif sans désactiver les autres fonctionnalités de l'automatisation."
+          default: ""
+          selector:
+            entity:
+              domain: input_boolean
+        restore_on_off:
+          name: "Réactivation automatique"
+          description: "Si l'option est activée, l'entité de contrôle ci-dessus est automatiquement réactivée quand toutes les lumières  sont éteintes. "
+          default: false
+          selector:
+            boolean:
+        disable_on_color:
+          name: "Désactiver avec de la couleur"
+          description: "Si l'option est activée, l'entité de contrôle ci-dessus est automatiquement désactivée lorsqu'une des lumières gérées passe en mode couleur."
+          default: false
+          selector:
+            boolean:
+        weather_entity:
+          name: "Ajuster avec la météo"
+          description: "Entité météo optionnelle utilisée pour ajuster légèrement la luminosité et la température de blanc adaptatives en fonction des prévisions météorologiques."
+          default: ""
+          selector:
+            entity:
+              domain: weather
+    night_section:
+      name: "Mode nuit"
+      icon: mdi:weather-night
+      description: "Réglages pour la nuit."
+      collapsed: true
+      input:
+        auto_on_mode:
+          name: "Allumage automatique"
+          description: "Choisit quand l'allumage automatique doit être actif. Le mode nuit utilise les critères activés ci-dessous."
+          default: day
+          selector:
+            select:
+              options:
+                - value: day
+                  label: "Allumage la journée"
+                - value: night
+                  label: "Allumage la nuit"
+                - value: always
+                  label: "Allumage permanent"
+        use_ha_sun_night:
+          name: "Utiliser la position du soleil"
+          description: "Cette option active le mode nuit tant que le soleil est sous l'horizon. Peut être désactivée si l'un des deux capteurs optionnels est configuré."
+          default: true
+          selector:
+            boolean:
+        light_sensors:
+          name: "Capteurs de luminosité (optionnel)"
+          description: "En option, le mode nuit peut être activé quand la luminosité mesurée par les capteurs sélectionnés passe sous le seuil défini en-dessous. La moyenne sera automatiquement calculée en choisissant plusieurs capteurs."
+          default: []
+          selector:
+            entity:
+              domain: sensor
+              device_class: illuminance
+              multiple: true
+        light_threshold:
+          name: "Seuil de luminosité"
+          description: "Le seuil de luminosité pour basculer entre mode nuit et jour. Champ ignoré si aucun capteur de luminosité n'a été sélectionné au-dessus."
+          default: 30
+          selector:
+            number:
+              min: 0
+              max: 1000
+              unit_of_measurement: lx
+              mode: box
+        night_mode_entity:
+          name: "Entité mode nuit (optionnel)"
+          description: "L'entrée logique sélectionnée activera aussi le mode nuit, en plus des autres critères actifs."
+          default: ""
+          selector:
+            entity:
+              filter:
+                - domain: input_boolean
+                - domain: binary_sensor
+
+mode: parallel
+max: 10
+max_exceeded: silent
+trace:
+  stored_traces: 20
+
+trigger_variables:
+  control_entities_off_var: !input control_entities_off
+  trigger_lights_target_var: !input lights
+
+variables:
+  lights: !input lights
+  sensors: !input sensors
+  switch_entity: !input switch_entity
+  keep_on_open_doors: !input keep_on_open_doors
+  light_sensors: !input light_sensors
+  light_threshold: !input light_threshold
+  control_entities_off: !input control_entities_off
+  auto_mode_input_entity: !input auto_mode_boolean
+  auto_on_mode: !input auto_on_mode
+  use_ha_sun_night: !input use_ha_sun_night
+  weather_entity_id: !input weather_entity
+  night_mode_entity_id: !input night_mode_entity
+  b_night: !input brightness_night
+  b_day: !input brightness_day
+  k_night: !input kelvin_night
+  k_day: !input kelvin_day
+  night_adaptive_enabled: !input night_adaptive_enabled
+  nm_brightness: !input night_mode_brightness
+  nm_kelvin: !input night_mode_kelvin
+  enable_adaptive: !input enable_adaptive
+  night_mode_entity_active: >-
+    {{ night_mode_entity_id not in ['', none]
+       and is_state(night_mode_entity_id, 'on') }}
+  low_illuminance_active: >-
+    {% set ls = light_sensors %}
+    {% set thr = light_threshold | float(0) %}
+    {% if ls in (none, [], '') or thr <= 0 %}
+      false
+    {% else %}
+      {% set expanded = expand(ls) | list %}
+      {% set average = (
+        expanded | map(attribute='state') | map('float', 0) | sum /
+        [expanded | count, 1] | max
+      ) %}
+      {{ average < thr }}
+    {% endif %}
+  is_night_mode: >-
+    {{ ((use_ha_sun_night | bool) and is_state('sun.sun', 'below_horizon'))
+       or (low_illuminance_active | bool)
+       or (night_mode_entity_active | bool) }}
+  night_adaptive_active: >-
+    {{ (enable_adaptive | bool)
+       and (night_adaptive_enabled | bool)
+       and (is_night_mode | bool) }}
+  restore_on_off: !input restore_on_off
+  disable_on_color: !input disable_on_color
+  auto_onoff_enabled: >-
+    {% set has_sensors = sensors not in (none, [], '') %}
+    {% set has_switch = switch_entity not in (none, '') %}
+    {% set has_controls = control_entities_off not in (none, [], '') %}
+    {{ has_sensors or has_switch or has_controls }}
+  expanded_light_entities: >
+    {% set target = lights %}
+    {% set ns = namespace(entities=[]) %}
+    {% if target.entity_id is defined %}
+      {% set ids = [target.entity_id] if target.entity_id is string else target.entity_id %}
+      {% for current_id in ids %}
+        {% set member_ids = state_attr(current_id, 'entity_id') %}
+        {% if member_ids is string %}
+          {% set member_ids = [member_ids] %}
+        {% endif %}
+        {% if member_ids is sequence and member_ids is not string and (member_ids | count > 0) %}
+          {% set expanded_ids = expand(member_ids) | map(attribute='entity_id') | select('match', 'light\\.') | list %}
+          {% set fallback_ids = member_ids | select('match', 'light\\.') | list %}
+          {% set ns.entities = ns.entities + (expanded_ids if (expanded_ids | count > 0) else fallback_ids) %}
+        {% else %}
+          {% set expanded_ids = expand([current_id]) | map(attribute='entity_id') | select('match', 'light\\.') | list %}
+          {% set fallback_ids = [current_id] | select('match', 'light\\.') | list %}
+          {% set ns.entities = ns.entities + (expanded_ids if (expanded_ids | count > 0) else fallback_ids) %}
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+    {% if target.area_id is defined %}
+      {% set areas = [target.area_id] if target.area_id is string else target.area_id %}
+      {% for a in areas %}
+        {% set ns.entities = ns.entities + (area_entities(a) | select('match', 'light\\.') | list) %}
+      {% endfor %}
+    {% endif %}
+    {% if target.device_id is defined %}
+      {% set devices = [target.device_id] if target.device_id is string else target.device_id %}
+      {% for d in devices %}
+        {% set ns.entities = ns.entities + (device_entities(d) | select('match', 'light\\.') | list) %}
+      {% endfor %}
+    {% endif %}
+    {{ ns.entities | unique | list }}
+
+trigger:
+  - trigger: state
+    alias: "Capteur devenu actif"
+    entity_id: !input sensors
+    to: "on"
+    not_from:
+      - "unavailable"
+      - "unknown"
+    id: sensor_on
+  
+  - trigger: state
+    alias: "Capteur devenu inactif"
+    entity_id: !input sensors
+    to: "off"
+    not_from:
+      - "unavailable"
+      - "unknown"
+    id: sensor_off
+  
+  - trigger: state
+    alias: "Capteur devenu disponible"
+    entity_id: !input sensors
+    from: "unavailable"
+    to: "off"
+    id: ha_start
+  
+  - trigger: state
+    alias: "Capteur devenu connu"
+    entity_id: !input sensors
+    from: "unknown"
+    to: "off"
+    id: ha_start
+  
+  - trigger: template
+    value_template: >-
+      {% set controls_off = control_entities_off_var %}
+      {% set has_controls = controls_off not in (none, [], '') %}
+      {% set off_ok = controls_off in (none, [], '') or
+         expand(controls_off) | rejectattr('state', 'eq', 'off') | list | count == 0 %}
+      {{ has_controls and off_ok }}
+    id: control_on
+  
+  - trigger: template
+    value_template: >-
+      {% set controls_off = control_entities_off_var %}
+      {% set has_controls = controls_off not in (none, [], '') %}
+      {% set off_invalid = controls_off not in (none, [], '') and
+         expand(controls_off) | selectattr('state', 'eq', 'on') | list | count > 0 %}
+      {{ has_controls and off_invalid }}
+    id: control_off
+  
+  - trigger: event
+    alias: "Changement d'état de l'interrupteur"
+    event_type: state_changed
+    event_data:
+      entity_id: !input switch_entity
+    id: switch_toggled
+  
+  - trigger: template
+    alias: "Ajustement automatique des lumières"
+    value_template: >-
+      {% set target = trigger_lights_target_var %}
+      {% set ns = namespace(entities=[]) %}
+      {% if target.entity_id is defined %}
+        {% set ids = [target.entity_id] if target.entity_id is string else target.entity_id %}
+        {% for current_id in ids %}
+          {% set member_ids = state_attr(current_id, 'entity_id') %}
+          {% if member_ids is string %}
+            {% set member_ids = [member_ids] %}
+          {% endif %}
+          {% if member_ids is sequence and member_ids is not string and (member_ids | count > 0) %}
+            {% set expanded_ids = expand(member_ids) | map(attribute='entity_id') | select('match', 'light\\.') | list %}
+            {% set fallback_ids = member_ids | select('match', 'light\\.') | list %}
+            {% set ns.entities = ns.entities + (expanded_ids if (expanded_ids | count > 0) else fallback_ids) %}
+          {% else %}
+            {% set expanded_ids = expand([current_id]) | map(attribute='entity_id') | select('match', 'light\\.') | list %}
+            {% set fallback_ids = [current_id] | select('match', 'light\\.') | list %}
+            {% set ns.entities = ns.entities + (expanded_ids if (expanded_ids | count > 0) else fallback_ids) %}
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+      {% if target.area_id is defined %}
+        {% set areas = [target.area_id] if target.area_id is string else target.area_id %}
+        {% for a in areas %}
+          {% set ns.entities = ns.entities + (area_entities(a) | select('match', 'light\\.') | list) %}
+        {% endfor %}
+      {% endif %}
+      {% if target.device_id is defined %}
+        {% set devices = [target.device_id] if target.device_id is string else target.device_id %}
+        {% for d in devices %}
+          {% set ns.entities = ns.entities + (device_entities(d) | select('match', 'light\\.') | list) %}
+        {% endfor %}
+      {% endif %}
+      {% set trigger_light_entities = ns.entities | unique | list %}
+      {{ (now().minute % 5 == 0)
+         and (
+           expand(trigger_light_entities)
+           | selectattr('state', 'eq', 'on')
+           | list
+           | count
+         ) > 0 }}
+    id: tick
+  
+  - trigger: event
+    alias: "Entité de contrôle changée"
+    event_type: state_changed
+    event_data:
+      entity_id: !input auto_mode_boolean
+    id: auto_mode_enabled
+  
+  - trigger: event
+    alias: "Entité mode nuit changée"
+    event_type: state_changed
+    event_data:
+      entity_id: !input night_mode_entity
+    id: night_mode_changed
+  
+  - trigger: state
+    alias: "Capteur de luminosité modifié"
+    entity_id: !input light_sensors
+    id: night_lux_changed
+  
+  - trigger: event
+    alias: "Automatisation rechargée"
+    event_type: call_service
+    event_data:
+      domain: automation
+      service: reload
+    id: automations_reload_service
+  
+  - trigger: template
+    alias: "Automatisation réactivée"
+    value_template: >-
+      {{ is_state(this.entity_id, 'on') }}
+    id: automation_reenabled
+  
+  - trigger: template
+    alias: "Allumage d'une lumière"
+    value_template: >-
+      {% set target = trigger_lights_target_var %}
+      {% set ns = namespace(entities=[]) %}
+      {% if target.entity_id is defined %}
+        {% set ids = [target.entity_id] if target.entity_id is string else target.entity_id %}
+        {% for current_id in ids %}
+          {% set member_ids = state_attr(current_id, 'entity_id') %}
+          {% if member_ids is string %}
+            {% set member_ids = [member_ids] %}
+          {% endif %}
+          {% if member_ids is sequence and member_ids is not string and (member_ids | count > 0) %}
+            {% set expanded_ids = expand(member_ids) | map(attribute='entity_id') | select('match', 'light\\.') | list %}
+            {% set fallback_ids = member_ids | select('match', 'light\\.') | list %}
+            {% set ns.entities = ns.entities + (expanded_ids if (expanded_ids | count > 0) else fallback_ids) %}
+          {% else %}
+            {% set expanded_ids = expand([current_id]) | map(attribute='entity_id') | select('match', 'light\\.') | list %}
+            {% set fallback_ids = [current_id] | select('match', 'light\\.') | list %}
+            {% set ns.entities = ns.entities + (expanded_ids if (expanded_ids | count > 0) else fallback_ids) %}
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+      {% if target.area_id is defined %}
+        {% set areas = [target.area_id] if target.area_id is string else target.area_id %}
+        {% for a in areas %}
+          {% set ns.entities = ns.entities + (area_entities(a) | select('match', 'light\\.') | list) %}
+        {% endfor %}
+      {% endif %}
+      {% if target.device_id is defined %}
+        {% set devices = [target.device_id] if target.device_id is string else target.device_id %}
+        {% for d in devices %}
+          {% set ns.entities = ns.entities + (device_entities(d) | select('match', 'light\\.') | list) %}
+        {% endfor %}
+      {% endif %}
+      {% set trigger_light_entities = ns.entities | unique | list %}
+      {{ expand(trigger_light_entities)
+         | selectattr('state', 'eq', 'on')
+         | list | count > 0 }}
+    id: lights_any_on
+  
+  - trigger: template
+    alias: "Allumage de toutes les lumières"
+    value_template: >-
+      {% set target = trigger_lights_target_var %}
+      {% set ns = namespace(entities=[]) %}
+      {% if target.entity_id is defined %}
+        {% set ids = [target.entity_id] if target.entity_id is string else target.entity_id %}
+        {% for current_id in ids %}
+          {% set member_ids = state_attr(current_id, 'entity_id') %}
+          {% if member_ids is string %}
+            {% set member_ids = [member_ids] %}
+          {% endif %}
+          {% if member_ids is sequence and member_ids is not string and (member_ids | count > 0) %}
+            {% set expanded_ids = expand(member_ids) | map(attribute='entity_id') | select('match', 'light\\.') | list %}
+            {% set fallback_ids = member_ids | select('match', 'light\\.') | list %}
+            {% set ns.entities = ns.entities + (expanded_ids if (expanded_ids | count > 0) else fallback_ids) %}
+          {% else %}
+            {% set expanded_ids = expand([current_id]) | map(attribute='entity_id') | select('match', 'light\\.') | list %}
+            {% set fallback_ids = [current_id] | select('match', 'light\\.') | list %}
+            {% set ns.entities = ns.entities + (expanded_ids if (expanded_ids | count > 0) else fallback_ids) %}
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+      {% if target.area_id is defined %}
+        {% set areas = [target.area_id] if target.area_id is string else target.area_id %}
+        {% for a in areas %}
+          {% set ns.entities = ns.entities + (area_entities(a) | select('match', 'light\\.') | list) %}
+        {% endfor %}
+      {% endif %}
+      {% if target.device_id is defined %}
+        {% set devices = [target.device_id] if target.device_id is string else target.device_id %}
+        {% for d in devices %}
+          {% set ns.entities = ns.entities + (device_entities(d) | select('match', 'light\\.') | list) %}
+        {% endfor %}
+      {% endif %}
+      {% set trigger_light_entities = ns.entities | unique | list %}
+      {% set on_count = expand(trigger_light_entities) | selectattr('state', 'eq', 'on') | list | count %}
+      {% set total_count = expand(trigger_light_entities) | list | count %}
+      {{ total_count > 0 and on_count == total_count }}
+    id: lights_all_on
+  
+  - trigger: template
+    alias: "Extinction de toutes les lumières"
+    value_template: >-
+      {% set target = trigger_lights_target_var %}
+      {% set ns = namespace(entities=[]) %}
+      {% if target.entity_id is defined %}
+        {% set ids = [target.entity_id] if target.entity_id is string else target.entity_id %}
+        {% for current_id in ids %}
+          {% set member_ids = state_attr(current_id, 'entity_id') %}
+          {% if member_ids is string %}
+            {% set member_ids = [member_ids] %}
+          {% endif %}
+          {% if member_ids is sequence and member_ids is not string and (member_ids | count > 0) %}
+            {% set expanded_ids = expand(member_ids) | map(attribute='entity_id') | select('match', 'light\\.') | list %}
+            {% set fallback_ids = member_ids | select('match', 'light\\.') | list %}
+            {% set ns.entities = ns.entities + (expanded_ids if (expanded_ids | count > 0) else fallback_ids) %}
+          {% else %}
+            {% set expanded_ids = expand([current_id]) | map(attribute='entity_id') | select('match', 'light\\.') | list %}
+            {% set fallback_ids = [current_id] | select('match', 'light\\.') | list %}
+            {% set ns.entities = ns.entities + (expanded_ids if (expanded_ids | count > 0) else fallback_ids) %}
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+      {% if target.area_id is defined %}
+        {% set areas = [target.area_id] if target.area_id is string else target.area_id %}
+        {% for a in areas %}
+          {% set ns.entities = ns.entities + (area_entities(a) | select('match', 'light\\.') | list) %}
+        {% endfor %}
+      {% endif %}
+      {% if target.device_id is defined %}
+        {% set devices = [target.device_id] if target.device_id is string else target.device_id %}
+        {% for d in devices %}
+          {% set ns.entities = ns.entities + (device_entities(d) | select('match', 'light\\.') | list) %}
+        {% endfor %}
+      {% endif %}
+      {% set trigger_light_entities = ns.entities | unique | list %}
+      {{ expand(trigger_light_entities)
+         | selectattr('state', 'eq', 'on')
+         | list | count == 0 }}
+    id: lights_all_off
+  
+  - trigger: sun
+    alias: "Lever du soleil"
+    event: sunrise
+    id: sun_event
+  
+  - trigger: sun
+    alias: "Coucher du soleil"
+    event: sunset
+    id: sun_event
+
+condition:
+  - condition: template
+    value_template: >
+      {% set event = trigger.event.data if trigger.event is defined and trigger.event.data is defined else none %}
+      {% set switch_event = trigger.id == 'switch_toggled'
+         and switch_entity not in ['', none]
+         and event is not none
+         and event.new_state is not none
+         and event.old_state is not none
+         and event.old_state.state not in ['unavailable', 'unknown']
+         and event.new_state.state not in ['unavailable', 'unknown'] %}
+      {{ trigger.id not in ['switch_toggled', 'auto_mode_enabled', 'night_mode_changed']
+         or switch_event
+         or (
+           trigger.id == 'auto_mode_enabled'
+           and auto_mode_input_entity not in ['', none]
+           and event is not none
+           and event.new_state is not none
+           and event.new_state.state == 'on'
+           and (event.old_state is none or event.old_state.state != 'on')
+         )
+         or (
+           trigger.id == 'night_mode_changed'
+           and night_mode_entity_id not in ['', none]
+           and event is not none
+           and event.new_state is not none
+           and (event.old_state is none or event.old_state.state != event.new_state.state)
+         ) }}
+  
+  - condition: template
+    value_template: >
+      {{ trigger.id not in ['tick', 'sun_event', 'auto_mode_enabled', 'night_mode_changed', 'night_lux_changed', 'automations_reload_service']
+         or auto_mode_input_entity in ['', none]
+         or is_state(auto_mode_input_entity, 'on') }}
+  
+  - condition: template
+    value_template: >
+      {% set proactive_adaptive_trigger = trigger.id in ['tick', 'sun_event', 'auto_mode_enabled', 'night_mode_changed', 'night_lux_changed', 'automations_reload_service'] %}
+      {{ not proactive_adaptive_trigger
+         or (expand(expanded_light_entities) | selectattr('state', 'eq', 'on') | list | count) > 0 }}
+
+action:
+  - choose:
+      - conditions:
+          - "{{ auto_onoff_enabled | bool }}"
+          - condition: trigger
+            id:
+              - sensor_on
+              - control_on
+        sequence:
+          - variables:
+              sensors_active: >-
+                {% if trigger.id == 'control_on' %}
+                  {{ expand(sensors) | selectattr('state', 'eq', 'on') | list | count > 0 }}
+                {% else %}
+                  {{ trigger.from_state is not none and trigger.from_state.state not in ['unavailable', 'unknown'] }}
+                {% endif %}
+              adaptive_mode_active: >-
+                {{ auto_mode_input_entity in ['', none]
+                   or is_state(auto_mode_input_entity, 'on') }}
+              controls_valid: >-
+                {% set controls_off = control_entities_off %}
+                {% set off_ok = controls_off in (none, [], '')
+                   or expand(controls_off) | rejectattr('state', 'eq', 'off') | list | count == 0 %}
+                {{ off_ok }}
+              turn_on_allowed: >-
+                {% set mode = auto_on_mode if auto_on_mode in ['day', 'night', 'always'] else 'day' %}
+                {% if mode == 'always' %}
+                  true
+                {% elif mode == 'night' %}
+                  {{ is_night_mode | bool }}
+                {% else %}
+                  {{ not (is_night_mode | bool) }}
+                {% endif %}
+          - condition: "{{ sensors_active | bool }}"
+          - condition: "{{ controls_valid | bool }}"
+          - condition: "{{ turn_on_allowed | bool }}"
+          - if:
+              - "{{ enable_adaptive | bool }}"
+              - "{{ adaptive_mode_active | bool }}"
+            then:
+              - variables:
+                  now_ts: "{{ as_timestamp(now()) }}"
+                  next_rising_ts: "{{ as_timestamp(state_attr('sun.sun', 'next_rising')) }}"
+                  next_setting_ts: "{{ as_timestamp(state_attr('sun.sun', 'next_setting')) }}"
+                  day_offset_s: 2700
+                  sunrise_ts: >
+                    {% set nr = next_rising_ts | float(0) %}
+                    {% set ns = next_setting_ts | float(0) %}
+                    {{ (nr - (86400 if nr > ns else 0)) - day_offset_s }}
+                  sunset_ts: "{{ (next_setting_ts | float(0)) + day_offset_s }}"
+                  previous_sunrise_ts: "{{ (sunrise_ts | float(0)) - 86400 }}"
+                  previous_sunset_ts: "{{ (sunset_ts | float(0)) - 86400 }}"
+                  weather_condition_state: >
+                    {% if weather_entity_id not in ['', none] %}
+                      {{ states(weather_entity_id) | lower }}
+                    {% else %}
+                      {{ '' }}
+                    {% endif %}
+                  weather_factor: >
+                    {% set c = weather_condition_state | lower %}
+                    {% if c in ['', 'unknown', 'unavailable', 'none'] %}
+                      0
+                    {% elif c in ['sunny', 'clear-night'] %}
+                      0.0
+                    {% elif c == 'partlycloudy' %}
+                      0.35
+                    {% elif c == 'windy' %}
+                      0.45
+                    {% elif c in ['windy-variant', 'cloudy'] %}
+                      0.55
+                    {% elif c == 'snowy' %}
+                      0.6
+                    {% elif c in ['snowy-rainy', 'hail'] %}
+                      0.65
+                    {% elif c == 'fog' %}
+                      0.75
+                    {% elif c == 'rainy' %}
+                      0.8
+                    {% elif c == 'pouring' %}
+                      0.85
+                    {% elif c in ['lightning', 'lightning-rainy'] %}
+                      0.9
+                    {% elif c == 'exceptional' %}
+                      0.95
+                    {% else %}
+                      0.0
+                    {% endif %}
+                  effective_brightness_curve_gamma: >
+                    {% set base = 1.2 %}
+                    {% set w = weather_factor | float(0) %}
+                    {{ [0.8, [base + (w * 0.25), 2.2] | min] | max }}
+                  daylight_progress: >
+                    {% set t = now_ts | float(0) %}
+                    {% set sr0 = sunrise_ts | float(0) %}
+                    {% set ss0 = sunset_ts | float(0) %}
+                    {% set sr_prev = previous_sunrise_ts | float(0) %}
+                    {% set ss_prev = previous_sunset_ts | float(0) %}
+                    {% if t >= sr0 and t < ss0 %}
+                      {% set d = (t - sr0) / (ss0 - sr0) %}
+                      {{ [0, [d, 1] | min] | max }}
+                    {% elif t >= sr_prev and t < ss_prev %}
+                      {% set d = (t - sr_prev) / (ss_prev - sr_prev) %}
+                      {{ [0, [d, 1] | min] | max }}
+                    {% else %}
+                      {{ none }}
+                    {% endif %}
+                  sun_position: >
+                    {% set t = now_ts | float(0) %}
+                    {% set sr0 = sunrise_ts | float(0) %}
+                    {% set ss0 = sunset_ts | float(0) %}
+                    {% set sr_prev = previous_sunrise_ts | float(0) %}
+                    {% set ss_prev = previous_sunset_ts | float(0) %}
+                    {% if t >= sr0 and t < ss0 %}
+                      {% set d = (t - sr0) / (ss0 - sr0) %}
+                      {% set d = [0, [d, 1] | min] | max %}
+                      {{ (1 - ((2 * d - 1) ** 2)) | float(0) }}
+                    {% elif t >= sr_prev and t < ss_prev %}
+                      {% set d = (t - sr_prev) / (ss_prev - sr_prev) %}
+                      {% set d = [0, [d, 1] | min] | max %}
+                      {{ (1 - ((2 * d - 1) ** 2)) | float(0) }}
+                    {% elif t < sr0 %}
+                      {% set n = (t - ss_prev) / (sr0 - ss_prev) %}
+                      {% set n = [0, [n, 1] | min] | max %}
+                      {{ (-(1 - ((2 * n - 1) ** 2))) | float(0) }}
+                    {% else %}
+                      {% set n = (t - ss0) / (sr0 + 86400 - ss0) %}
+                      {% set n = [0, [n, 1] | min] | max %}
+                      {{ (-(1 - ((2 * n - 1) ** 2))) | float(0) }}
+                    {% endif %}
+                  adaptive_curve_factor: >
+                    {% set p = sun_position | float(0) %}
+                    {% if p > 0 %}
+                      {% set s0 = p * p * p * ((p * ((6 * p) - 15)) + 10) %}
+                      {% set single = (expanded_light_entities | count) == 1 %}
+                      {% set base_curve = s0 ** (effective_brightness_curve_gamma | float(1.2)) %}
+                      {% if single and daylight_progress not in [none, 'none', ''] %}
+                        {% set day_ratio = daylight_progress | float(0) %}
+                        {% if day_ratio < 0.5 %}
+                          {{ base_curve ** 0.78 }}
+                        {% else %}
+                          {{ base_curve ** 0.62 }}
+                        {% endif %}
+                      {% else %}
+                        {{ base_curve }}
+                      {% endif %}
+                    {% else %}
+                      0
+                    {% endif %}
+                  weather_kelvin_offset: "{{ ((0.5 - (weather_factor | float(0))) * 900) }}"
+                  target_brightness: >
+                    {% set b_min = [b_night | float(1), b_day | float(100)] | min %}
+                    {% set b_max = [b_night | float(1), b_day | float(100)] | max %}
+                    {{ (b_min + (b_max - b_min) * (adaptive_curve_factor | float(0))) | round(0) | int }}
+                  target_kelvin: >
+                    {% set k_min = [k_night | float(2200), k_day | float(5000)] | min %}
+                    {% set k_max = [k_night | float(2200), k_day | float(5000)] | max %}
+                    {% set base = (k_min + (k_max - k_min) * (adaptive_curve_factor | float(0))) %}
+                    {% set adjusted = base + (weather_kelvin_offset | float(0)) %}
+                    {{ [k_min, [adjusted, k_max] | min] | max | round(0) | int }}
+                  effective_brightness: >
+                    {{ nm_brightness | int(20) if (night_adaptive_active | bool) else target_brightness | int(0) }}
+                  effective_kelvin: >
+                    {{ nm_kelvin | int(2200) if (night_adaptive_active | bool) else target_kelvin | int(0) }}
+              - variables:
+                  target_lights: "{{ expanded_light_entities }}"
+              - repeat:
+                  for_each: "{{ target_lights }}"
+                  sequence:
+                    - variables:
+                        current_light: "{{ repeat.item }}"
+                    - variables:
+                        modes: "{{ state_attr(current_light, 'supported_color_modes') or [] }}"
+                        modes_count: "{{ modes | count }}"
+                        min_k: "{{ state_attr(current_light, 'min_color_temp_kelvin') | float(0) }}"
+                        max_k: "{{ state_attr(current_light, 'max_color_temp_kelvin') | float(0) }}"
+                        has_brightness_attr: "{{ state_attr(current_light, 'brightness') is not none }}"
+                        has_ct_kelvin_attr: "{{ state_attr(current_light, 'color_temp_kelvin') is not none }}"
+                        has_ct_attr: "{{ state_attr(current_light, 'color_temp') is not none }}"
+                        current_color_mode: "{{ state_attr(current_light, 'color_mode') }}"
+                        onoff_only: "{{ (modes_count == 1) and (modes[0] == 'onoff') }}"
+                        supports_ct: >
+                          {{ 'color_temp' in modes
+                             or (min_k > 0 and max_k > 0)
+                             or has_ct_kelvin_attr
+                             or has_ct_attr }}
+                        supports_brightness: >
+                          {{ has_brightness_attr
+                             or (modes_count == 0)
+                             or not onoff_only }}
+                        prefers_mired_ct: >
+                          {{ (has_ct_attr or ('color_temp' in modes))
+                             and not has_ct_kelvin_attr }}
+                        force_ct_mode_switch: >
+                          {{ current_color_mode in ['xy', 'hs', 'rgb', 'rgbw', 'rgbww'] }}
+                        clamped_kelvin: >
+                          {% if min_k > 0 and max_k > 0 %}
+                            {{ [min_k, [effective_kelvin | float(0), max_k] | min] | max | round(0) | int }}
+                          {% else %}
+                            {{ effective_kelvin | int(0) }}
+                          {% endif %}
+                        clamped_mired: >
+                          {{ (1000000 / [clamped_kelvin | float(1), 1] | max) | round(0) | int }}
+                    - choose:
+                        - conditions:
+                            - "{{ (supports_brightness | bool) and (supports_ct | bool) and (force_ct_mode_switch | bool) and (prefers_mired_ct | bool) }}"
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 0
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 1
+                                brightness_pct: "{{ effective_brightness | int(0) }}"
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                        - conditions:
+                            - "{{ (supports_brightness | bool) and (supports_ct | bool) and (force_ct_mode_switch | bool) }}"
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 0
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 1
+                                brightness_pct: "{{ effective_brightness | int(0) }}"
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                        - conditions:
+                            - "{{ (supports_brightness | bool) and (supports_ct | bool) and (prefers_mired_ct | bool) }}"
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 1
+                                brightness_pct: "{{ effective_brightness | int(0) }}"
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                        - conditions:
+                            - "{{ (supports_brightness | bool) and (supports_ct | bool) }}"
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 1
+                                brightness_pct: "{{ effective_brightness | int(0) }}"
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                        - conditions:
+                            - "{{ supports_brightness | bool }}"
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 1
+                                brightness_pct: "{{ effective_brightness | int(0) }}"
+                        - conditions:
+                            - "{{ (supports_ct | bool) and (force_ct_mode_switch | bool) and (prefers_mired_ct | bool) }}"
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 0
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                        - conditions:
+                            - "{{ (supports_ct | bool) and (force_ct_mode_switch | bool) }}"
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 0
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                        - conditions:
+                            - "{{ (supports_ct | bool) and (prefers_mired_ct | bool) }}"
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 1
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                        - conditions:
+                            - "{{ supports_ct | bool }}"
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 1
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                      default:
+                        - action: light.turn_on
+                          continue_on_error: true
+                          target:
+                            entity_id: "{{ current_light }}"
+            else:
+              - action: light.turn_on
+                target: !input lights
+
+      - conditions:
+          - "{{ auto_onoff_enabled | bool }}"
+          - condition: trigger
+            id:
+              - sensor_off
+              - control_off
+              - ha_start
+              - automation_reenabled
+        sequence:
+          - condition: >-
+              {% if trigger.id != 'automation_reenabled' %}
+                true
+              {% else %}
+                {% set old_state = trigger.event.data.old_state
+                   if trigger.event is defined
+                   and trigger.event.data is defined
+                   and trigger.event.data.old_state is defined
+                   else none %}
+                {% set new_state = trigger.event.data.new_state
+                   if trigger.event is defined
+                   and trigger.event.data is defined
+                   and trigger.event.data.new_state is defined
+                   else none %}
+                {{ old_state is not none
+                   and new_state is not none
+                   and old_state.state == 'off'
+                   and new_state.state == 'on'
+                   and (
+                     expand(expanded_light_entities)
+                     | selectattr('state', 'eq', 'on')
+                     | list | count
+                   ) > 0 }}
+              {% endif %}
+          - wait_for_trigger:
+              - trigger: state
+                entity_id: !input sensors
+                to: "on"
+                not_from:
+                  - "unavailable"
+                  - "unknown"
+            timeout: !input off_delay
+            continue_on_timeout: true
+          - condition: "{{ wait.trigger is none }}"
+          - variables:
+              controls_valid: >-
+                {% set controls_off = control_entities_off %}
+                {% set off_ok = controls_off in (none, [], '')
+                   or expand(controls_off) | rejectattr('state', 'eq', 'off') | list | count == 0 %}
+                {{ off_ok }}
+              off_conditions_still_met: >-
+                {% set controls_off = control_entities_off %}
+                {% set has_controls = controls_off not in (none, [], '') %}
+                {% if trigger.id == 'control_off' %}
+                  {{ has_controls and not (controls_valid | bool) }}
+                {% elif trigger.id == 'automation_reenabled' %}
+                  {{ (controls_valid | bool) or (has_controls and not (controls_valid | bool)) }}
+                {% else %}
+                  {{ controls_valid | bool }}
+                {% endif %}
+              sensors_clear: >-
+                {% if not keep_on_open_doors %}
+                  {{ expand(sensors)
+                     | selectattr('attributes.device_class', 'in', ['motion', 'occupancy', 'presence'])
+                     | selectattr('state', 'eq', 'on')
+                     | list | count == 0 }}
+                {% else %}
+                  {{ expand(sensors)
+                     | selectattr('state', 'eq', 'on')
+                     | list | count == 0 }}
+                {% endif %}
+          - condition: "{{ off_conditions_still_met | bool }}"
+          - condition: "{{ sensors_clear | bool }}"
+          - variables:
+              restore_white_before_off: >-
+                {{ (restore_on_off | bool)
+                   and (enable_adaptive | bool)
+                   and auto_mode_input_entity not in ['', none]
+                   and auto_mode_input_entity.startswith('input_boolean.')
+                   and is_state(auto_mode_input_entity, 'off') }}
+          - if:
+              - "{{ restore_white_before_off | bool }}"
+            then:
+              - variables:
+                  now_ts: "{{ as_timestamp(now()) }}"
+                  next_rising_ts: "{{ as_timestamp(state_attr('sun.sun', 'next_rising')) }}"
+                  next_setting_ts: "{{ as_timestamp(state_attr('sun.sun', 'next_setting')) }}"
+                  day_offset_s: 2700
+                  sunrise_ts: >
+                    {% set nr = next_rising_ts | float(0) %}
+                    {% set ns = next_setting_ts | float(0) %}
+                    {{ (nr - (86400 if nr > ns else 0)) - day_offset_s }}
+                  sunset_ts: "{{ (next_setting_ts | float(0)) + day_offset_s }}"
+                  previous_sunrise_ts: "{{ (sunrise_ts | float(0)) - 86400 }}"
+                  previous_sunset_ts: "{{ (sunset_ts | float(0)) - 86400 }}"
+                  weather_condition_state: >
+                    {% if weather_entity_id not in ['', none] %}
+                      {{ states(weather_entity_id) | lower }}
+                    {% else %}
+                      {{ '' }}
+                    {% endif %}
+                  weather_factor: >
+                    {% set c = weather_condition_state | lower %}
+                    {% if c in ['', 'unknown', 'unavailable', 'none'] %}
+                      0
+                    {% elif c in ['sunny', 'clear-night'] %}
+                      0.0
+                    {% elif c == 'partlycloudy' %}
+                      0.35
+                    {% elif c == 'windy' %}
+                      0.45
+                    {% elif c in ['windy-variant', 'cloudy'] %}
+                      0.55
+                    {% elif c == 'snowy' %}
+                      0.6
+                    {% elif c in ['snowy-rainy', 'hail'] %}
+                      0.65
+                    {% elif c == 'fog' %}
+                      0.75
+                    {% elif c == 'rainy' %}
+                      0.8
+                    {% elif c == 'pouring' %}
+                      0.85
+                    {% elif c in ['lightning', 'lightning-rainy'] %}
+                      0.9
+                    {% elif c == 'exceptional' %}
+                      0.95
+                    {% else %}
+                      0.0
+                    {% endif %}
+                  effective_brightness_curve_gamma: >
+                    {% set base = 1.2 %}
+                    {% set w = weather_factor | float(0) %}
+                    {{ [0.8, [base + (w * 0.25), 2.2] | min] | max }}
+                  daylight_progress: >
+                    {% set t = now_ts | float(0) %}
+                    {% set sr0 = sunrise_ts | float(0) %}
+                    {% set ss0 = sunset_ts | float(0) %}
+                    {% set sr_prev = previous_sunrise_ts | float(0) %}
+                    {% set ss_prev = previous_sunset_ts | float(0) %}
+                    {% if t >= sr0 and t < ss0 %}
+                      {% set d = (t - sr0) / (ss0 - sr0) %}
+                      {{ [0, [d, 1] | min] | max }}
+                    {% elif t >= sr_prev and t < ss_prev %}
+                      {% set d = (t - sr_prev) / (ss_prev - sr_prev) %}
+                      {{ [0, [d, 1] | min] | max }}
+                    {% else %}
+                      {{ none }}
+                    {% endif %}
+                  sun_position: >
+                    {% set t = now_ts | float(0) %}
+                    {% set sr0 = sunrise_ts | float(0) %}
+                    {% set ss0 = sunset_ts | float(0) %}
+                    {% set sr_prev = previous_sunrise_ts | float(0) %}
+                    {% set ss_prev = previous_sunset_ts | float(0) %}
+                    {% if t >= sr0 and t < ss0 %}
+                      {% set d = (t - sr0) / (ss0 - sr0) %}
+                      {% set d = [0, [d, 1] | min] | max %}
+                      {{ (1 - ((2 * d - 1) ** 2)) | float(0) }}
+                    {% elif t >= sr_prev and t < ss_prev %}
+                      {% set d = (t - sr_prev) / (ss_prev - sr_prev) %}
+                      {% set d = [0, [d, 1] | min] | max %}
+                      {{ (1 - ((2 * d - 1) ** 2)) | float(0) }}
+                    {% elif t < sr0 %}
+                      {% set n = (t - ss_prev) / (sr0 - ss_prev) %}
+                      {% set n = [0, [n, 1] | min] | max %}
+                      {{ (-(1 - ((2 * n - 1) ** 2))) | float(0) }}
+                    {% else %}
+                      {% set n = (t - ss0) / (sr0 + 86400 - ss0) %}
+                      {% set n = [0, [n, 1] | min] | max %}
+                      {{ (-(1 - ((2 * n - 1) ** 2))) | float(0) }}
+                    {% endif %}
+                  adaptive_curve_factor: >
+                    {% set p = sun_position | float(0) %}
+                    {% if p > 0 %}
+                      {% set s0 = p * p * p * ((p * ((6 * p) - 15)) + 10) %}
+                      {% set single = (expanded_light_entities | count) == 1 %}
+                      {% set base_curve = s0 ** (effective_brightness_curve_gamma | float(1.2)) %}
+                      {% if single and daylight_progress not in [none, 'none', ''] %}
+                        {% set day_ratio = daylight_progress | float(0) %}
+                        {% if day_ratio < 0.5 %}
+                          {{ base_curve ** 0.78 }}
+                        {% else %}
+                          {{ base_curve ** 0.62 }}
+                        {% endif %}
+                      {% else %}
+                        {{ base_curve }}
+                      {% endif %}
+                    {% else %}
+                      0
+                    {% endif %}
+                  weather_kelvin_offset: "{{ ((0.5 - (weather_factor | float(0))) * 900) }}"
+                  target_brightness: >
+                    {% set b_min = [b_night | float(1), b_day | float(100)] | min %}
+                    {% set b_max = [b_night | float(1), b_day | float(100)] | max %}
+                    {{ (b_min + (b_max - b_min) * (adaptive_curve_factor | float(0))) | round(0) | int }}
+                  target_kelvin: >
+                    {% set k_min = [k_night | float(2200), k_day | float(5000)] | min %}
+                    {% set k_max = [k_night | float(2200), k_day | float(5000)] | max %}
+                    {% set base = (k_min + (k_max - k_min) * (adaptive_curve_factor | float(0))) %}
+                    {% set adjusted = base + (weather_kelvin_offset | float(0)) %}
+                    {{ [k_min, [adjusted, k_max] | min] | max | round(0) | int }}
+                  effective_brightness: >
+                    {{ nm_brightness | int(20) if (night_adaptive_active | bool) else target_brightness | int(0) }}
+                  effective_kelvin: >
+                    {{ nm_kelvin | int(2200) if (night_adaptive_active | bool) else target_kelvin | int(0) }}
+              - variables:
+                  effective_brightness: 1
+                  target_lights: >-
+                    {{ expand(expanded_light_entities)
+                       | selectattr('state', 'eq', 'on')
+                       | map(attribute='entity_id')
+                       | list }}
+              - repeat:
+                  for_each: "{{ target_lights }}"
+                  sequence:
+                    - variables:
+                        current_light: "{{ repeat.item }}"
+                    - variables:
+                        modes: "{{ state_attr(current_light, 'supported_color_modes') or [] }}"
+                        modes_count: "{{ modes | count }}"
+                        min_k: "{{ state_attr(current_light, 'min_color_temp_kelvin') | float(0) }}"
+                        max_k: "{{ state_attr(current_light, 'max_color_temp_kelvin') | float(0) }}"
+                        has_brightness_attr: "{{ state_attr(current_light, 'brightness') is not none }}"
+                        has_ct_kelvin_attr: "{{ state_attr(current_light, 'color_temp_kelvin') is not none }}"
+                        has_ct_attr: "{{ state_attr(current_light, 'color_temp') is not none }}"
+                        current_color_mode: "{{ state_attr(current_light, 'color_mode') }}"
+                        onoff_only: "{{ (modes_count == 1) and (modes[0] == 'onoff') }}"
+                        supports_ct: >
+                          {{ 'color_temp' in modes
+                             or (min_k > 0 and max_k > 0)
+                             or has_ct_kelvin_attr
+                             or has_ct_attr }}
+                        supports_brightness: >
+                          {{ has_brightness_attr
+                             or (modes_count == 0)
+                             or not onoff_only }}
+                        prefers_mired_ct: >
+                          {{ (has_ct_attr or ('color_temp' in modes))
+                             and not has_ct_kelvin_attr }}
+                        force_ct_mode_switch: >
+                          {{ current_color_mode in ['xy', 'hs', 'rgb', 'rgbw', 'rgbww'] }}
+                        clamped_kelvin: >
+                          {% if min_k > 0 and max_k > 0 %}
+                            {{ [min_k, [effective_kelvin | float(0), max_k] | min] | max | round(0) | int }}
+                          {% else %}
+                            {{ effective_kelvin | int(0) }}
+                          {% endif %}
+                        clamped_mired: >
+                          {{ (1000000 / [clamped_kelvin | float(1), 1] | max) | round(0) | int }}
+                    - choose:
+                        - conditions:
+                            - "{{ (supports_brightness | bool) and (supports_ct | bool) and (force_ct_mode_switch | bool) and (prefers_mired_ct | bool) }}"
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 0
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 1
+                                brightness_pct: "{{ effective_brightness | int(0) }}"
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                        - conditions:
+                            - "{{ (supports_brightness | bool) and (supports_ct | bool) and (force_ct_mode_switch | bool) }}"
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 0
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 1
+                                brightness_pct: "{{ effective_brightness | int(0) }}"
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                        - conditions:
+                            - "{{ (supports_brightness | bool) and (supports_ct | bool) and (prefers_mired_ct | bool) }}"
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 1
+                                brightness_pct: "{{ effective_brightness | int(0) }}"
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                        - conditions:
+                            - "{{ (supports_brightness | bool) and (supports_ct | bool) }}"
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 1
+                                brightness_pct: "{{ effective_brightness | int(0) }}"
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                        - conditions:
+                            - "{{ supports_brightness | bool }}"
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 1
+                                brightness_pct: "{{ effective_brightness | int(0) }}"
+                        - conditions:
+                            - "{{ (supports_ct | bool) and (force_ct_mode_switch | bool) and (prefers_mired_ct | bool) }}"
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 0
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                        - conditions:
+                            - "{{ (supports_ct | bool) and (force_ct_mode_switch | bool) }}"
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 0
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                        - conditions:
+                            - "{{ (supports_ct | bool) and (prefers_mired_ct | bool) }}"
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 1
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                        - conditions:
+                            - "{{ supports_ct | bool }}"
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 1
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                      default:
+                        - action: light.turn_on
+                          continue_on_error: true
+                          target:
+                            entity_id: "{{ current_light }}"
+              - variables:
+                  stubborn_color_lights: >-
+                    {{ expand(target_lights)
+                       | selectattr('state', 'eq', 'on')
+                       | selectattr('attributes.color_mode', 'in', ['xy', 'hs', 'rgb', 'rgbw', 'rgbww'])
+                       | map(attribute='entity_id')
+                       | list }}
+              - if:
+                  - "{{ stubborn_color_lights | count > 0 }}"
+                then:
+                  - repeat:
+                      for_each: "{{ stubborn_color_lights }}"
+                      sequence:
+                        - variables:
+                            current_light: "{{ repeat.item }}"
+                        - variables:
+                            modes: "{{ state_attr(current_light, 'supported_color_modes') or [] }}"
+                            modes_count: "{{ modes | count }}"
+                            min_k: "{{ state_attr(current_light, 'min_color_temp_kelvin') | float(0) }}"
+                            max_k: "{{ state_attr(current_light, 'max_color_temp_kelvin') | float(0) }}"
+                            has_brightness_attr: "{{ state_attr(current_light, 'brightness') is not none }}"
+                            has_ct_kelvin_attr: "{{ state_attr(current_light, 'color_temp_kelvin') is not none }}"
+                            has_ct_attr: "{{ state_attr(current_light, 'color_temp') is not none }}"
+                            current_color_mode: "{{ state_attr(current_light, 'color_mode') }}"
+                            onoff_only: "{{ (modes_count == 1) and (modes[0] == 'onoff') }}"
+                            supports_ct: >
+                              {{ 'color_temp' in modes
+                                 or (min_k > 0 and max_k > 0)
+                                 or has_ct_kelvin_attr
+                                 or has_ct_attr }}
+                            supports_brightness: >
+                              {{ has_brightness_attr
+                                 or (modes_count == 0)
+                                 or not onoff_only }}
+                            prefers_mired_ct: >
+                              {{ (has_ct_attr or ('color_temp' in modes))
+                                 and not has_ct_kelvin_attr }}
+                            force_ct_mode_switch: >
+                              {{ current_color_mode in ['xy', 'hs', 'rgb', 'rgbw', 'rgbww'] }}
+                            clamped_kelvin: >
+                              {% if min_k > 0 and max_k > 0 %}
+                                {{ [min_k, [effective_kelvin | float(0), max_k] | min] | max | round(0) | int }}
+                              {% else %}
+                                {{ effective_kelvin | int(0) }}
+                              {% endif %}
+                            clamped_mired: >
+                              {{ (1000000 / [clamped_kelvin | float(1), 1] | max) | round(0) | int }}
+                        - choose:
+                            - conditions:
+                                - "{{ (supports_ct | bool) and (prefers_mired_ct | bool) }}"
+                              sequence:
+                                - action: light.turn_on
+                                  continue_on_error: true
+                                  target:
+                                    entity_id: "{{ current_light }}"
+                                  data:
+                                    transition: 0
+                                    brightness_pct: 1
+                                    color_temp: "{{ clamped_mired | int(0) }}"
+                            - conditions:
+                                - "{{ supports_ct | bool }}"
+                              sequence:
+                                - action: light.turn_on
+                                  continue_on_error: true
+                                  target:
+                                    entity_id: "{{ current_light }}"
+                                  data:
+                                    transition: 0
+                                    brightness_pct: 1
+                                    color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+              - wait_template: >-
+                  {{ expand(target_lights)
+                     | selectattr('state', 'eq', 'on')
+                     | rejectattr('attributes.color_mode', 'in', ['xy', 'hs', 'rgb', 'rgbw', 'rgbww'])
+                     | list | count
+                     ==
+                     (expand(target_lights) | selectattr('state', 'eq', 'on') | list | count) }}
+                timeout:
+                  seconds: 2
+                continue_on_timeout: true
+          - action: light.turn_off
+            target: !input lights
+
+      - conditions:
+          - "{{ auto_onoff_enabled | bool }}"
+          - condition: trigger
+            id:
+              - switch_toggled
+        sequence:
+          - variables:
+              switch_event_valid: >-
+                {{ switch_entity not in ('', none)
+                   and trigger.event is defined
+                   and trigger.event.data is defined
+                   and trigger.event.data.new_state is not none
+                   and trigger.event.data.old_state is not none
+                   and trigger.event.data.old_state.state not in ['unavailable', 'unknown']
+                   and trigger.event.data.new_state.state not in ['unavailable', 'unknown'] }}
+              switch_turning_on: >-
+                {{ (switch_event_valid | bool) and trigger.event.data.new_state.state == 'on' }}
+              switch_turning_off: >-
+                {{ (switch_event_valid | bool) and trigger.event.data.new_state.state == 'off' }}
+              target_lights_count: >-
+                {{ expand(expanded_light_entities) | list | count }}
+              target_lights_on_count: >-
+                {{ expand(expanded_light_entities) | selectattr('state', 'eq', 'on') | list | count }}
+              all_target_lights_off: >-
+                {{ (target_lights_on_count | int(0)) == 0 }}
+              all_target_lights_on: >-
+                {{ (target_lights_count | int(0)) > 0
+                   and (target_lights_on_count | int(0)) == (target_lights_count | int(0)) }}
+              adaptive_mode_active: >-
+                {{ auto_mode_input_entity in ['', none]
+                   or is_state(auto_mode_input_entity, 'on') }}
+          - condition: "{{ switch_event_valid | bool }}"
+          - if:
+              - "{{ switch_turning_off | bool }}"
+              - "{{ not (all_target_lights_off | bool) }}"
+            then:
+              - variables:
+                  restore_white_before_off: >-
+                    {{ (restore_on_off | bool)
+                       and (enable_adaptive | bool)
+                       and auto_mode_input_entity not in ['', none]
+                       and auto_mode_input_entity.startswith('input_boolean.')
+                       and is_state(auto_mode_input_entity, 'off') }}
+              - if:
+                  - "{{ restore_white_before_off | bool }}"
+                then:
+                  - variables:
+                      now_ts: "{{ as_timestamp(now()) }}"
+                      next_rising_ts: "{{ as_timestamp(state_attr('sun.sun', 'next_rising')) }}"
+                      next_setting_ts: "{{ as_timestamp(state_attr('sun.sun', 'next_setting')) }}"
+                      day_offset_s: 2700
+                      sunrise_ts: >
+                        {% set nr = next_rising_ts | float(0) %}
+                        {% set ns = next_setting_ts | float(0) %}
+                        {{ (nr - (86400 if nr > ns else 0)) - day_offset_s }}
+                      sunset_ts: "{{ (next_setting_ts | float(0)) + day_offset_s }}"
+                      previous_sunrise_ts: "{{ (sunrise_ts | float(0)) - 86400 }}"
+                      previous_sunset_ts: "{{ (sunset_ts | float(0)) - 86400 }}"
+                      weather_condition_state: >
+                        {% if weather_entity_id not in ['', none] %}
+                          {{ states(weather_entity_id) | lower }}
+                        {% else %}
+                          {{ '' }}
+                        {% endif %}
+                      weather_factor: >
+                        {% set c = weather_condition_state | lower %}
+                        {% if c in ['', 'unknown', 'unavailable', 'none'] %}
+                          0
+                        {% elif c in ['sunny', 'clear-night'] %}
+                          0.0
+                        {% elif c == 'partlycloudy' %}
+                          0.35
+                        {% elif c == 'windy' %}
+                          0.45
+                        {% elif c in ['windy-variant', 'cloudy'] %}
+                          0.55
+                        {% elif c == 'snowy' %}
+                          0.6
+                        {% elif c in ['snowy-rainy', 'hail'] %}
+                          0.65
+                        {% elif c == 'fog' %}
+                          0.75
+                        {% elif c == 'rainy' %}
+                          0.8
+                        {% elif c == 'pouring' %}
+                          0.85
+                        {% elif c in ['lightning', 'lightning-rainy'] %}
+                          0.9
+                        {% elif c == 'exceptional' %}
+                          0.95
+                        {% else %}
+                          0.0
+                        {% endif %}
+                      effective_brightness_curve_gamma: >
+                        {% set base = 1.2 %}
+                        {% set w = weather_factor | float(0) %}
+                        {{ [0.8, [base + (w * 0.25), 2.2] | min] | max }}
+                      daylight_progress: >
+                        {% set t = now_ts | float(0) %}
+                        {% set sr0 = sunrise_ts | float(0) %}
+                        {% set ss0 = sunset_ts | float(0) %}
+                        {% set sr_prev = previous_sunrise_ts | float(0) %}
+                        {% set ss_prev = previous_sunset_ts | float(0) %}
+                        {% if t >= sr0 and t < ss0 %}
+                          {% set d = (t - sr0) / (ss0 - sr0) %}
+                          {{ [0, [d, 1] | min] | max }}
+                        {% elif t >= sr_prev and t < ss_prev %}
+                          {% set d = (t - sr_prev) / (ss_prev - sr_prev) %}
+                          {{ [0, [d, 1] | min] | max }}
+                        {% else %}
+                          {{ none }}
+                        {% endif %}
+                      sun_position: >
+                        {% set t = now_ts | float(0) %}
+                        {% set sr0 = sunrise_ts | float(0) %}
+                        {% set ss0 = sunset_ts | float(0) %}
+                        {% set sr_prev = previous_sunrise_ts | float(0) %}
+                        {% set ss_prev = previous_sunset_ts | float(0) %}
+                        {% if t >= sr0 and t < ss0 %}
+                          {% set d = (t - sr0) / (ss0 - sr0) %}
+                          {% set d = [0, [d, 1] | min] | max %}
+                          {{ (1 - ((2 * d - 1) ** 2)) | float(0) }}
+                        {% elif t >= sr_prev and t < ss_prev %}
+                          {% set d = (t - sr_prev) / (ss_prev - sr_prev) %}
+                          {% set d = [0, [d, 1] | min] | max %}
+                          {{ (1 - ((2 * d - 1) ** 2)) | float(0) }}
+                        {% elif t < sr0 %}
+                          {% set n = (t - ss_prev) / (sr0 - ss_prev) %}
+                          {% set n = [0, [n, 1] | min] | max %}
+                          {{ (-(1 - ((2 * n - 1) ** 2))) | float(0) }}
+                        {% else %}
+                          {% set n = (t - ss0) / (sr0 + 86400 - ss0) %}
+                          {% set n = [0, [n, 1] | min] | max %}
+                          {{ (-(1 - ((2 * n - 1) ** 2))) | float(0) }}
+                        {% endif %}
+                      adaptive_curve_factor: >
+                        {% set p = sun_position | float(0) %}
+                        {% if p > 0 %}
+                          {% set s0 = p * p * p * ((p * ((6 * p) - 15)) + 10) %}
+                          {% set single = (expanded_light_entities | count) == 1 %}
+                          {% set base_curve = s0 ** (effective_brightness_curve_gamma | float(1.2)) %}
+                          {% if single and daylight_progress not in [none, 'none', ''] %}
+                            {% set day_ratio = daylight_progress | float(0) %}
+                            {% if day_ratio < 0.5 %}
+                              {{ base_curve ** 0.78 }}
+                            {% else %}
+                              {{ base_curve ** 0.62 }}
+                            {% endif %}
+                          {% else %}
+                            {{ base_curve }}
+                          {% endif %}
+                        {% else %}
+                          0
+                        {% endif %}
+                      weather_kelvin_offset: "{{ ((0.5 - (weather_factor | float(0))) * 900) }}"
+                      target_brightness: >
+                        {% set b_min = [b_night | float(1), b_day | float(100)] | min %}
+                        {% set b_max = [b_night | float(1), b_day | float(100)] | max %}
+                        {{ (b_min + (b_max - b_min) * (adaptive_curve_factor | float(0))) | round(0) | int }}
+                      target_kelvin: >
+                        {% set k_min = [k_night | float(2200), k_day | float(5000)] | min %}
+                        {% set k_max = [k_night | float(2200), k_day | float(5000)] | max %}
+                        {% set base = (k_min + (k_max - k_min) * (adaptive_curve_factor | float(0))) %}
+                        {% set adjusted = base + (weather_kelvin_offset | float(0)) %}
+                        {{ [k_min, [adjusted, k_max] | min] | max | round(0) | int }}
+                      effective_brightness: >
+                        {{ nm_brightness | int(20) if (night_adaptive_active | bool) else target_brightness | int(0) }}
+                      effective_kelvin: >
+                        {{ nm_kelvin | int(2200) if (night_adaptive_active | bool) else target_kelvin | int(0) }}
+                  - variables:
+                      effective_brightness: 1
+                      target_lights: >-
+                        {{ expand(expanded_light_entities)
+                           | selectattr('state', 'eq', 'on')
+                           | map(attribute='entity_id')
+                           | list }}
+                  - repeat:
+                      for_each: "{{ target_lights }}"
+                      sequence:
+                        - variables:
+                            current_light: "{{ repeat.item }}"
+                        - variables:
+                            modes: "{{ state_attr(current_light, 'supported_color_modes') or [] }}"
+                            modes_count: "{{ modes | count }}"
+                            min_k: "{{ state_attr(current_light, 'min_color_temp_kelvin') | float(0) }}"
+                            max_k: "{{ state_attr(current_light, 'max_color_temp_kelvin') | float(0) }}"
+                            has_brightness_attr: "{{ state_attr(current_light, 'brightness') is not none }}"
+                            has_ct_kelvin_attr: "{{ state_attr(current_light, 'color_temp_kelvin') is not none }}"
+                            has_ct_attr: "{{ state_attr(current_light, 'color_temp') is not none }}"
+                            current_color_mode: "{{ state_attr(current_light, 'color_mode') }}"
+                            onoff_only: "{{ (modes_count == 1) and (modes[0] == 'onoff') }}"
+                            supports_ct: >
+                              {{ 'color_temp' in modes
+                                 or (min_k > 0 and max_k > 0)
+                                 or has_ct_kelvin_attr
+                                 or has_ct_attr }}
+                            supports_brightness: >
+                              {{ has_brightness_attr
+                                 or (modes_count == 0)
+                                 or not onoff_only }}
+                            prefers_mired_ct: >
+                              {{ (has_ct_attr or ('color_temp' in modes))
+                                 and not has_ct_kelvin_attr }}
+                            force_ct_mode_switch: >
+                              {{ current_color_mode in ['xy', 'hs', 'rgb', 'rgbw', 'rgbww'] }}
+                            clamped_kelvin: >
+                              {% if min_k > 0 and max_k > 0 %}
+                                {{ [min_k, [effective_kelvin | float(0), max_k] | min] | max | round(0) | int }}
+                              {% else %}
+                                {{ effective_kelvin | int(0) }}
+                              {% endif %}
+                            clamped_mired: >
+                              {{ (1000000 / [clamped_kelvin | float(1), 1] | max) | round(0) | int }}
+                        - choose:
+                            - conditions:
+                                - "{{ (supports_brightness | bool) and (supports_ct | bool) and (force_ct_mode_switch | bool) and (prefers_mired_ct | bool) }}"
+                              sequence:
+                                - action: light.turn_on
+                                  continue_on_error: true
+                                  target:
+                                    entity_id: "{{ current_light }}"
+                                  data:
+                                    transition: 0
+                                    color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                                - action: light.turn_on
+                                  continue_on_error: true
+                                  target:
+                                    entity_id: "{{ current_light }}"
+                                  data:
+                                    transition: 1
+                                    brightness_pct: "{{ effective_brightness | int(0) }}"
+                                    color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                            - conditions:
+                                - "{{ (supports_brightness | bool) and (supports_ct | bool) and (force_ct_mode_switch | bool) }}"
+                              sequence:
+                                - action: light.turn_on
+                                  continue_on_error: true
+                                  target:
+                                    entity_id: "{{ current_light }}"
+                                  data:
+                                    transition: 0
+                                    color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                                - action: light.turn_on
+                                  continue_on_error: true
+                                  target:
+                                    entity_id: "{{ current_light }}"
+                                  data:
+                                    transition: 1
+                                    brightness_pct: "{{ effective_brightness | int(0) }}"
+                                    color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                            - conditions:
+                                - "{{ (supports_brightness | bool) and (supports_ct | bool) and (prefers_mired_ct | bool) }}"
+                              sequence:
+                                - action: light.turn_on
+                                  continue_on_error: true
+                                  target:
+                                    entity_id: "{{ current_light }}"
+                                  data:
+                                    transition: 1
+                                    brightness_pct: "{{ effective_brightness | int(0) }}"
+                                    color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                            - conditions:
+                                - "{{ (supports_brightness | bool) and (supports_ct | bool) }}"
+                              sequence:
+                                - action: light.turn_on
+                                  continue_on_error: true
+                                  target:
+                                    entity_id: "{{ current_light }}"
+                                  data:
+                                    transition: 1
+                                    brightness_pct: "{{ effective_brightness | int(0) }}"
+                                    color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                            - conditions:
+                                - "{{ supports_brightness | bool }}"
+                              sequence:
+                                - action: light.turn_on
+                                  continue_on_error: true
+                                  target:
+                                    entity_id: "{{ current_light }}"
+                                  data:
+                                    transition: 1
+                                    brightness_pct: "{{ effective_brightness | int(0) }}"
+                            - conditions:
+                                - "{{ (supports_ct | bool) and (force_ct_mode_switch | bool) and (prefers_mired_ct | bool) }}"
+                              sequence:
+                                - action: light.turn_on
+                                  continue_on_error: true
+                                  target:
+                                    entity_id: "{{ current_light }}"
+                                  data:
+                                    transition: 0
+                                    color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                            - conditions:
+                                - "{{ (supports_ct | bool) and (force_ct_mode_switch | bool) }}"
+                              sequence:
+                                - action: light.turn_on
+                                  continue_on_error: true
+                                  target:
+                                    entity_id: "{{ current_light }}"
+                                  data:
+                                    transition: 0
+                                    color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                            - conditions:
+                                - "{{ (supports_ct | bool) and (prefers_mired_ct | bool) }}"
+                              sequence:
+                                - action: light.turn_on
+                                  continue_on_error: true
+                                  target:
+                                    entity_id: "{{ current_light }}"
+                                  data:
+                                    transition: 1
+                                    color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                            - conditions:
+                                - "{{ supports_ct | bool }}"
+                              sequence:
+                                - action: light.turn_on
+                                  continue_on_error: true
+                                  target:
+                                    entity_id: "{{ current_light }}"
+                                  data:
+                                    transition: 1
+                                    color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                          default:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                  - variables:
+                      stubborn_color_lights: >-
+                        {{ expand(target_lights)
+                           | selectattr('state', 'eq', 'on')
+                           | selectattr('attributes.color_mode', 'in', ['xy', 'hs', 'rgb', 'rgbw', 'rgbww'])
+                           | map(attribute='entity_id')
+                           | list }}
+                  - if:
+                      - "{{ stubborn_color_lights | count > 0 }}"
+                    then:
+                      - repeat:
+                          for_each: "{{ stubborn_color_lights }}"
+                          sequence:
+                            - variables:
+                                current_light: "{{ repeat.item }}"
+                            - variables:
+                                modes: "{{ state_attr(current_light, 'supported_color_modes') or [] }}"
+                                modes_count: "{{ modes | count }}"
+                                min_k: "{{ state_attr(current_light, 'min_color_temp_kelvin') | float(0) }}"
+                                max_k: "{{ state_attr(current_light, 'max_color_temp_kelvin') | float(0) }}"
+                                has_brightness_attr: "{{ state_attr(current_light, 'brightness') is not none }}"
+                                has_ct_kelvin_attr: "{{ state_attr(current_light, 'color_temp_kelvin') is not none }}"
+                                has_ct_attr: "{{ state_attr(current_light, 'color_temp') is not none }}"
+                                current_color_mode: "{{ state_attr(current_light, 'color_mode') }}"
+                                onoff_only: "{{ (modes_count == 1) and (modes[0] == 'onoff') }}"
+                                supports_ct: >
+                                  {{ 'color_temp' in modes
+                                     or (min_k > 0 and max_k > 0)
+                                     or has_ct_kelvin_attr
+                                     or has_ct_attr }}
+                                supports_brightness: >
+                                  {{ has_brightness_attr
+                                     or (modes_count == 0)
+                                     or not onoff_only }}
+                                prefers_mired_ct: >
+                                  {{ (has_ct_attr or ('color_temp' in modes))
+                                     and not has_ct_kelvin_attr }}
+                                force_ct_mode_switch: >
+                                  {{ current_color_mode in ['xy', 'hs', 'rgb', 'rgbw', 'rgbww'] }}
+                                clamped_kelvin: >
+                                  {% if min_k > 0 and max_k > 0 %}
+                                    {{ [min_k, [effective_kelvin | float(0), max_k] | min] | max | round(0) | int }}
+                                  {% else %}
+                                    {{ effective_kelvin | int(0) }}
+                                  {% endif %}
+                                clamped_mired: >
+                                  {{ (1000000 / [clamped_kelvin | float(1), 1] | max) | round(0) | int }}
+                            - choose:
+                                - conditions:
+                                    - "{{ (supports_ct | bool) and (prefers_mired_ct | bool) }}"
+                                  sequence:
+                                    - action: light.turn_on
+                                      continue_on_error: true
+                                      target:
+                                        entity_id: "{{ current_light }}"
+                                      data:
+                                        transition: 0
+                                        brightness_pct: 1
+                                        color_temp: "{{ clamped_mired | int(0) }}"
+                                - conditions:
+                                    - "{{ supports_ct | bool }}"
+                                  sequence:
+                                    - action: light.turn_on
+                                      continue_on_error: true
+                                      target:
+                                        entity_id: "{{ current_light }}"
+                                      data:
+                                        transition: 0
+                                        brightness_pct: 1
+                                        color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                  - wait_template: >-
+                      {{ expand(target_lights)
+                         | selectattr('state', 'eq', 'on')
+                         | rejectattr('attributes.color_mode', 'in', ['xy', 'hs', 'rgb', 'rgbw', 'rgbww'])
+                         | list | count
+                         ==
+                         (expand(target_lights) | selectattr('state', 'eq', 'on') | list | count) }}
+                    timeout:
+                      seconds: 2
+                    continue_on_timeout: true
+              - action: light.turn_off
+                target: !input lights
+            else:
+              - if:
+                  - "{{ switch_turning_on | bool }}"
+                  - "{{ not (all_target_lights_on | bool) }}"
+                then:
+                  - if:
+                      - "{{ enable_adaptive | bool }}"
+                      - "{{ adaptive_mode_active | bool }}"
+                    then:
+                      - variables:
+                          now_ts: "{{ as_timestamp(now()) }}"
+                          next_rising_ts: "{{ as_timestamp(state_attr('sun.sun', 'next_rising')) }}"
+                          next_setting_ts: "{{ as_timestamp(state_attr('sun.sun', 'next_setting')) }}"
+                          day_offset_s: 2700
+                          sunrise_ts: >
+                            {% set nr = next_rising_ts | float(0) %}
+                            {% set ns = next_setting_ts | float(0) %}
+                            {{ (nr - (86400 if nr > ns else 0)) - day_offset_s }}
+                          sunset_ts: "{{ (next_setting_ts | float(0)) + day_offset_s }}"
+                          previous_sunrise_ts: "{{ (sunrise_ts | float(0)) - 86400 }}"
+                          previous_sunset_ts: "{{ (sunset_ts | float(0)) - 86400 }}"
+                          weather_condition_state: >
+                            {% if weather_entity_id not in ['', none] %}
+                              {{ states(weather_entity_id) | lower }}
+                            {% else %}
+                              {{ '' }}
+                            {% endif %}
+                          weather_factor: >
+                            {% set c = weather_condition_state | lower %}
+                            {% if c in ['', 'unknown', 'unavailable', 'none'] %}
+                              0
+                            {% elif c in ['sunny', 'clear-night'] %}
+                              0.0
+                            {% elif c == 'partlycloudy' %}
+                              0.35
+                            {% elif c == 'windy' %}
+                              0.45
+                            {% elif c in ['windy-variant', 'cloudy'] %}
+                              0.55
+                            {% elif c == 'snowy' %}
+                              0.6
+                            {% elif c in ['snowy-rainy', 'hail'] %}
+                              0.65
+                            {% elif c == 'fog' %}
+                              0.75
+                            {% elif c == 'rainy' %}
+                              0.8
+                            {% elif c == 'pouring' %}
+                              0.85
+                            {% elif c in ['lightning', 'lightning-rainy'] %}
+                              0.9
+                            {% elif c == 'exceptional' %}
+                              0.95
+                            {% else %}
+                              0.0
+                            {% endif %}
+                          effective_brightness_curve_gamma: >
+                            {% set base = 1.2 %}
+                            {% set w = weather_factor | float(0) %}
+                            {{ [0.8, [base + (w * 0.25), 2.2] | min] | max }}
+                          daylight_progress: >
+                            {% set t = now_ts | float(0) %}
+                            {% set sr0 = sunrise_ts | float(0) %}
+                            {% set ss0 = sunset_ts | float(0) %}
+                            {% set sr_prev = previous_sunrise_ts | float(0) %}
+                            {% set ss_prev = previous_sunset_ts | float(0) %}
+                            {% if t >= sr0 and t < ss0 %}
+                              {% set d = (t - sr0) / (ss0 - sr0) %}
+                              {{ [0, [d, 1] | min] | max }}
+                            {% elif t >= sr_prev and t < ss_prev %}
+                              {% set d = (t - sr_prev) / (ss_prev - sr_prev) %}
+                              {{ [0, [d, 1] | min] | max }}
+                            {% else %}
+                              {{ none }}
+                            {% endif %}
+                          sun_position: >
+                            {% set t = now_ts | float(0) %}
+                            {% set sr0 = sunrise_ts | float(0) %}
+                            {% set ss0 = sunset_ts | float(0) %}
+                            {% set sr_prev = previous_sunrise_ts | float(0) %}
+                            {% set ss_prev = previous_sunset_ts | float(0) %}
+                            {% if t >= sr0 and t < ss0 %}
+                              {% set d = (t - sr0) / (ss0 - sr0) %}
+                              {% set d = [0, [d, 1] | min] | max %}
+                              {{ (1 - ((2 * d - 1) ** 2)) | float(0) }}
+                            {% elif t >= sr_prev and t < ss_prev %}
+                              {% set d = (t - sr_prev) / (ss_prev - sr_prev) %}
+                              {% set d = [0, [d, 1] | min] | max %}
+                              {{ (1 - ((2 * d - 1) ** 2)) | float(0) }}
+                            {% elif t < sr0 %}
+                              {% set n = (t - ss_prev) / (sr0 - ss_prev) %}
+                              {% set n = [0, [n, 1] | min] | max %}
+                              {{ (-(1 - ((2 * n - 1) ** 2))) | float(0) }}
+                            {% else %}
+                              {% set n = (t - ss0) / (sr0 + 86400 - ss0) %}
+                              {% set n = [0, [n, 1] | min] | max %}
+                              {{ (-(1 - ((2 * n - 1) ** 2))) | float(0) }}
+                            {% endif %}
+                          adaptive_curve_factor: >
+                            {% set p = sun_position | float(0) %}
+                            {% if p > 0 %}
+                              {% set s0 = p * p * p * ((p * ((6 * p) - 15)) + 10) %}
+                              {% set single = (expanded_light_entities | count) == 1 %}
+                              {% set base_curve = s0 ** (effective_brightness_curve_gamma | float(1.2)) %}
+                              {% if single and daylight_progress not in [none, 'none', ''] %}
+                                {% set day_ratio = daylight_progress | float(0) %}
+                                {% if day_ratio < 0.5 %}
+                                  {{ base_curve ** 0.78 }}
+                                {% else %}
+                                  {{ base_curve ** 0.62 }}
+                                {% endif %}
+                              {% else %}
+                                {{ base_curve }}
+                              {% endif %}
+                            {% else %}
+                              0
+                            {% endif %}
+                          weather_kelvin_offset: "{{ ((0.5 - (weather_factor | float(0))) * 900) }}"
+                          target_brightness: >
+                            {% set b_min = [b_night | float(1), b_day | float(100)] | min %}
+                            {% set b_max = [b_night | float(1), b_day | float(100)] | max %}
+                            {{ (b_min + (b_max - b_min) * (adaptive_curve_factor | float(0))) | round(0) | int }}
+                          target_kelvin: >
+                            {% set k_min = [k_night | float(2200), k_day | float(5000)] | min %}
+                            {% set k_max = [k_night | float(2200), k_day | float(5000)] | max %}
+                            {% set base = (k_min + (k_max - k_min) * (adaptive_curve_factor | float(0))) %}
+                            {% set adjusted = base + (weather_kelvin_offset | float(0)) %}
+                            {{ [k_min, [adjusted, k_max] | min] | max | round(0) | int }}
+                          effective_brightness: >
+                            {{ nm_brightness | int(20) if (night_adaptive_active | bool) else target_brightness | int(0) }}
+                          effective_kelvin: >
+                            {{ nm_kelvin | int(2200) if (night_adaptive_active | bool) else target_kelvin | int(0) }}
+                      - variables:
+                          target_lights: "{{ expanded_light_entities }}"
+                      - repeat:
+                          for_each: "{{ target_lights }}"
+                          sequence:
+                            - variables:
+                                current_light: "{{ repeat.item }}"
+                            - variables:
+                                modes: "{{ state_attr(current_light, 'supported_color_modes') or [] }}"
+                                modes_count: "{{ modes | count }}"
+                                min_k: "{{ state_attr(current_light, 'min_color_temp_kelvin') | float(0) }}"
+                                max_k: "{{ state_attr(current_light, 'max_color_temp_kelvin') | float(0) }}"
+                                has_brightness_attr: "{{ state_attr(current_light, 'brightness') is not none }}"
+                                has_ct_kelvin_attr: "{{ state_attr(current_light, 'color_temp_kelvin') is not none }}"
+                                has_ct_attr: "{{ state_attr(current_light, 'color_temp') is not none }}"
+                                current_color_mode: "{{ state_attr(current_light, 'color_mode') }}"
+                                onoff_only: "{{ (modes_count == 1) and (modes[0] == 'onoff') }}"
+                                supports_ct: >
+                                  {{ 'color_temp' in modes
+                                     or (min_k > 0 and max_k > 0)
+                                     or has_ct_kelvin_attr
+                                     or has_ct_attr }}
+                                supports_brightness: >
+                                  {{ has_brightness_attr
+                                     or (modes_count == 0)
+                                     or not onoff_only }}
+                                prefers_mired_ct: >
+                                  {{ (has_ct_attr or ('color_temp' in modes))
+                                     and not has_ct_kelvin_attr }}
+                                force_ct_mode_switch: >
+                                  {{ current_color_mode in ['xy', 'hs', 'rgb', 'rgbw', 'rgbww'] }}
+                                clamped_kelvin: >
+                                  {% if min_k > 0 and max_k > 0 %}
+                                    {{ [min_k, [effective_kelvin | float(0), max_k] | min] | max | round(0) | int }}
+                                  {% else %}
+                                    {{ effective_kelvin | int(0) }}
+                                  {% endif %}
+                                clamped_mired: >
+                                  {{ (1000000 / [clamped_kelvin | float(1), 1] | max) | round(0) | int }}
+                            - choose:
+                                - conditions:
+                                    - "{{ (supports_brightness | bool) and (supports_ct | bool) and (force_ct_mode_switch | bool) and (prefers_mired_ct | bool) }}"
+                                  sequence:
+                                    - action: light.turn_on
+                                      continue_on_error: true
+                                      target:
+                                        entity_id: "{{ current_light }}"
+                                      data:
+                                        transition: 0
+                                        color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                                    - action: light.turn_on
+                                      continue_on_error: true
+                                      target:
+                                        entity_id: "{{ current_light }}"
+                                      data:
+                                        transition: 1
+                                        brightness_pct: "{{ effective_brightness | int(0) }}"
+                                        color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                                - conditions:
+                                    - "{{ (supports_brightness | bool) and (supports_ct | bool) and (force_ct_mode_switch | bool) }}"
+                                  sequence:
+                                    - action: light.turn_on
+                                      continue_on_error: true
+                                      target:
+                                        entity_id: "{{ current_light }}"
+                                      data:
+                                        transition: 0
+                                        color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                                    - action: light.turn_on
+                                      continue_on_error: true
+                                      target:
+                                        entity_id: "{{ current_light }}"
+                                      data:
+                                        transition: 1
+                                        brightness_pct: "{{ effective_brightness | int(0) }}"
+                                        color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                                - conditions:
+                                    - "{{ (supports_brightness | bool) and (supports_ct | bool) and (prefers_mired_ct | bool) }}"
+                                  sequence:
+                                    - action: light.turn_on
+                                      continue_on_error: true
+                                      target:
+                                        entity_id: "{{ current_light }}"
+                                      data:
+                                        transition: 1
+                                        brightness_pct: "{{ effective_brightness | int(0) }}"
+                                        color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                                - conditions:
+                                    - "{{ (supports_brightness | bool) and (supports_ct | bool) }}"
+                                  sequence:
+                                    - action: light.turn_on
+                                      continue_on_error: true
+                                      target:
+                                        entity_id: "{{ current_light }}"
+                                      data:
+                                        transition: 1
+                                        brightness_pct: "{{ effective_brightness | int(0) }}"
+                                        color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                                - conditions:
+                                    - "{{ supports_brightness | bool }}"
+                                  sequence:
+                                    - action: light.turn_on
+                                      continue_on_error: true
+                                      target:
+                                        entity_id: "{{ current_light }}"
+                                      data:
+                                        transition: 1
+                                        brightness_pct: "{{ effective_brightness | int(0) }}"
+                                - conditions:
+                                    - "{{ (supports_ct | bool) and (force_ct_mode_switch | bool) and (prefers_mired_ct | bool) }}"
+                                  sequence:
+                                    - action: light.turn_on
+                                      continue_on_error: true
+                                      target:
+                                        entity_id: "{{ current_light }}"
+                                      data:
+                                        transition: 0
+                                        color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                                - conditions:
+                                    - "{{ (supports_ct | bool) and (force_ct_mode_switch | bool) }}"
+                                  sequence:
+                                    - action: light.turn_on
+                                      continue_on_error: true
+                                      target:
+                                        entity_id: "{{ current_light }}"
+                                      data:
+                                        transition: 0
+                                        color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                                - conditions:
+                                    - "{{ (supports_ct | bool) and (prefers_mired_ct | bool) }}"
+                                  sequence:
+                                    - action: light.turn_on
+                                      continue_on_error: true
+                                      target:
+                                        entity_id: "{{ current_light }}"
+                                      data:
+                                        transition: 1
+                                        color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                                - conditions:
+                                    - "{{ supports_ct | bool }}"
+                                  sequence:
+                                    - action: light.turn_on
+                                      continue_on_error: true
+                                      target:
+                                        entity_id: "{{ current_light }}"
+                                      data:
+                                        transition: 1
+                                        color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                              default:
+                                - action: light.turn_on
+                                  continue_on_error: true
+                                  target:
+                                    entity_id: "{{ current_light }}"
+                    else:
+                      - action: light.turn_on
+                        target: !input lights
+
+      - conditions:
+          - condition: trigger
+            id:
+              - lights_all_on
+        sequence:
+          - if:
+              - >
+                {{ switch_entity not in ['', none]
+                   and is_state(switch_entity, 'off') }}
+            then:
+              - action: input_boolean.turn_on
+                target:
+                  entity_id: "{{ switch_entity }}"
+
+      - conditions:
+          - condition: trigger
+            id:
+              - lights_all_off
+        sequence:
+          - if:
+              - >
+                {{ switch_entity not in ['', none]
+                   and is_state(switch_entity, 'on') }}
+            then:
+              - action: input_boolean.turn_off
+                target:
+                  entity_id: "{{ switch_entity }}"
+          - if:
+              - >
+                {{ (restore_on_off | bool)
+                   and auto_mode_input_entity not in ['', none]
+                   and auto_mode_input_entity.startswith('input_boolean.')
+                   and is_state(auto_mode_input_entity, 'off') }}
+            then:
+              - action: input_boolean.turn_on
+                target:
+                  entity_id: "{{ auto_mode_input_entity }}"
+              - stop: "Restored control entity after all lights turned off"
+
+      - conditions:
+          - "{{ enable_adaptive | bool }}"
+          - condition: trigger
+            id:
+              - lights_any_on
+          - >
+            {{ auto_mode_input_entity in ['', none]
+               or is_state(auto_mode_input_entity, 'on') }}
+        sequence:
+          - variables:
+              on_lights: >
+                {{ expand(expanded_light_entities)
+                   | selectattr('state', 'eq', 'on')
+                   | map(attribute='entity_id')
+                   | list }}
+          - condition: "{{ on_lights | count > 0 }}"
+          - delay:
+              milliseconds: 200
+          - variables:
+              now_ts: "{{ as_timestamp(now()) }}"
+              next_rising_ts: "{{ as_timestamp(state_attr('sun.sun', 'next_rising')) }}"
+              next_setting_ts: "{{ as_timestamp(state_attr('sun.sun', 'next_setting')) }}"
+              day_offset_s: 2700
+              sunrise_ts: >
+                {% set nr = next_rising_ts | float(0) %}
+                {% set ns = next_setting_ts | float(0) %}
+                {{ (nr - (86400 if nr > ns else 0)) - day_offset_s }}
+              sunset_ts: "{{ (next_setting_ts | float(0)) + day_offset_s }}"
+              previous_sunrise_ts: "{{ (sunrise_ts | float(0)) - 86400 }}"
+              previous_sunset_ts: "{{ (sunset_ts | float(0)) - 86400 }}"
+              weather_condition_state: >
+                {% if weather_entity_id not in ['', none] %}
+                  {{ states(weather_entity_id) | lower }}
+                {% else %}
+                  {{ '' }}
+                {% endif %}
+              weather_factor: >
+                {% set c = weather_condition_state | lower %}
+                {% if c in ['', 'unknown', 'unavailable', 'none'] %}
+                  0
+                {% elif c in ['sunny', 'clear-night'] %}
+                  0.0
+                {% elif c == 'partlycloudy' %}
+                  0.35
+                {% elif c == 'windy' %}
+                  0.45
+                {% elif c in ['windy-variant', 'cloudy'] %}
+                  0.55
+                {% elif c == 'snowy' %}
+                  0.6
+                {% elif c in ['snowy-rainy', 'hail'] %}
+                  0.65
+                {% elif c == 'fog' %}
+                  0.75
+                {% elif c == 'rainy' %}
+                  0.8
+                {% elif c == 'pouring' %}
+                  0.85
+                {% elif c in ['lightning', 'lightning-rainy'] %}
+                  0.9
+                {% elif c == 'exceptional' %}
+                  0.95
+                {% else %}
+                  0.0
+                {% endif %}
+              effective_brightness_curve_gamma: >
+                {% set base = 1.2 %}
+                {% set w = weather_factor | float(0) %}
+                {{ [0.8, [base + (w * 0.25), 2.2] | min] | max }}
+              daylight_progress: >
+                {% set t = now_ts | float(0) %}
+                {% set sr0 = sunrise_ts | float(0) %}
+                {% set ss0 = sunset_ts | float(0) %}
+                {% set sr_prev = previous_sunrise_ts | float(0) %}
+                {% set ss_prev = previous_sunset_ts | float(0) %}
+                {% if t >= sr0 and t < ss0 %}
+                  {% set d = (t - sr0) / (ss0 - sr0) %}
+                  {{ [0, [d, 1] | min] | max }}
+                {% elif t >= sr_prev and t < ss_prev %}
+                  {% set d = (t - sr_prev) / (ss_prev - sr_prev) %}
+                  {{ [0, [d, 1] | min] | max }}
+                {% else %}
+                  {{ none }}
+                {% endif %}
+              sun_position: >
+                {% set t = now_ts | float(0) %}
+                {% set sr0 = sunrise_ts | float(0) %}
+                {% set ss0 = sunset_ts | float(0) %}
+                {% set sr_prev = previous_sunrise_ts | float(0) %}
+                {% set ss_prev = previous_sunset_ts | float(0) %}
+                {% if t >= sr0 and t < ss0 %}
+                  {% set d = (t - sr0) / (ss0 - sr0) %}
+                  {% set d = [0, [d, 1] | min] | max %}
+                  {{ (1 - ((2 * d - 1) ** 2)) | float(0) }}
+                {% elif t >= sr_prev and t < ss_prev %}
+                  {% set d = (t - sr_prev) / (ss_prev - sr_prev) %}
+                  {% set d = [0, [d, 1] | min] | max %}
+                  {{ (1 - ((2 * d - 1) ** 2)) | float(0) }}
+                {% elif t < sr0 %}
+                  {% set n = (t - ss_prev) / (sr0 - ss_prev) %}
+                  {% set n = [0, [n, 1] | min] | max %}
+                  {{ (-(1 - ((2 * n - 1) ** 2))) | float(0) }}
+                {% else %}
+                  {% set n = (t - ss0) / (sr0 + 86400 - ss0) %}
+                  {% set n = [0, [n, 1] | min] | max %}
+                  {{ (-(1 - ((2 * n - 1) ** 2))) | float(0) }}
+                {% endif %}
+              adaptive_curve_factor: >
+                {% set p = sun_position | float(0) %}
+                {% if p > 0 %}
+                  {% set s0 = p * p * p * ((p * ((6 * p) - 15)) + 10) %}
+                  {% set single = (expanded_light_entities | count) == 1 %}
+                  {% set base_curve = s0 ** (effective_brightness_curve_gamma | float(1.2)) %}
+                  {% if single and daylight_progress not in [none, 'none', ''] %}
+                    {% set day_ratio = daylight_progress | float(0) %}
+                    {% if day_ratio < 0.5 %}
+                      {{ base_curve ** 0.78 }}
+                    {% else %}
+                      {{ base_curve ** 0.62 }}
+                    {% endif %}
+                  {% else %}
+                    {{ base_curve }}
+                  {% endif %}
+                {% else %}
+                  0
+                {% endif %}
+              weather_kelvin_offset: "{{ ((0.5 - (weather_factor | float(0))) * 900) }}"
+              target_brightness: >
+                {% set b_min = [b_night | float(1), b_day | float(100)] | min %}
+                {% set b_max = [b_night | float(1), b_day | float(100)] | max %}
+                {{ (b_min + (b_max - b_min) * (adaptive_curve_factor | float(0))) | round(0) | int }}
+              target_kelvin: >
+                {% set k_min = [k_night | float(2200), k_day | float(5000)] | min %}
+                {% set k_max = [k_night | float(2200), k_day | float(5000)] | max %}
+                {% set base = (k_min + (k_max - k_min) * (adaptive_curve_factor | float(0))) %}
+                {% set adjusted = base + (weather_kelvin_offset | float(0)) %}
+                {{ [k_min, [adjusted, k_max] | min] | max | round(0) | int }}
+              effective_brightness: >
+                {{ nm_brightness | int(20) if (night_adaptive_active | bool) else target_brightness | int(0) }}
+              effective_kelvin: >
+                {{ nm_kelvin | int(2200) if (night_adaptive_active | bool) else target_kelvin | int(0) }}
+          - variables:
+              target_lights: "{{ on_lights }}"
+          - repeat:
+              for_each: "{{ target_lights }}"
+              sequence:
+                - variables:
+                    current_light: "{{ repeat.item }}"
+                - variables:
+                    modes: "{{ state_attr(current_light, 'supported_color_modes') or [] }}"
+                    modes_count: "{{ modes | count }}"
+                    min_k: "{{ state_attr(current_light, 'min_color_temp_kelvin') | float(0) }}"
+                    max_k: "{{ state_attr(current_light, 'max_color_temp_kelvin') | float(0) }}"
+                    has_brightness_attr: "{{ state_attr(current_light, 'brightness') is not none }}"
+                    has_ct_kelvin_attr: "{{ state_attr(current_light, 'color_temp_kelvin') is not none }}"
+                    has_ct_attr: "{{ state_attr(current_light, 'color_temp') is not none }}"
+                    current_color_mode: "{{ state_attr(current_light, 'color_mode') }}"
+                    onoff_only: "{{ (modes_count == 1) and (modes[0] == 'onoff') }}"
+                    supports_ct: >
+                      {{ 'color_temp' in modes
+                         or (min_k > 0 and max_k > 0)
+                         or has_ct_kelvin_attr
+                         or has_ct_attr }}
+                    supports_brightness: >
+                      {{ has_brightness_attr
+                         or (modes_count == 0)
+                         or not onoff_only }}
+                    prefers_mired_ct: >
+                      {{ (has_ct_attr or ('color_temp' in modes))
+                         and not has_ct_kelvin_attr }}
+                    force_ct_mode_switch: >
+                      {{ current_color_mode in ['xy', 'hs', 'rgb', 'rgbw', 'rgbww'] }}
+                    clamped_kelvin: >
+                      {% if min_k > 0 and max_k > 0 %}
+                        {{ [min_k, [effective_kelvin | float(0), max_k] | min] | max | round(0) | int }}
+                      {% else %}
+                        {{ effective_kelvin | int(0) }}
+                      {% endif %}
+                    clamped_mired: >
+                      {{ (1000000 / [clamped_kelvin | float(1), 1] | max) | round(0) | int }}
+                - choose:
+                    - conditions:
+                        - "{{ (supports_brightness | bool) and (supports_ct | bool) and (force_ct_mode_switch | bool) and (prefers_mired_ct | bool) }}"
+                      sequence:
+                        - action: light.turn_on
+                          continue_on_error: true
+                          target:
+                            entity_id: "{{ current_light }}"
+                          data:
+                            transition: 0
+                            color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                        - action: light.turn_on
+                          continue_on_error: true
+                          target:
+                            entity_id: "{{ current_light }}"
+                          data:
+                            transition: 1
+                            brightness_pct: "{{ effective_brightness | int(0) }}"
+                            color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                    - conditions:
+                        - "{{ (supports_brightness | bool) and (supports_ct | bool) and (force_ct_mode_switch | bool) }}"
+                      sequence:
+                        - action: light.turn_on
+                          continue_on_error: true
+                          target:
+                            entity_id: "{{ current_light }}"
+                          data:
+                            transition: 0
+                            color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                        - action: light.turn_on
+                          continue_on_error: true
+                          target:
+                            entity_id: "{{ current_light }}"
+                          data:
+                            transition: 1
+                            brightness_pct: "{{ effective_brightness | int(0) }}"
+                            color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                    - conditions:
+                        - "{{ (supports_brightness | bool) and (supports_ct | bool) and (prefers_mired_ct | bool) }}"
+                      sequence:
+                        - action: light.turn_on
+                          continue_on_error: true
+                          target:
+                            entity_id: "{{ current_light }}"
+                          data:
+                            transition: 1
+                            brightness_pct: "{{ effective_brightness | int(0) }}"
+                            color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                    - conditions:
+                        - "{{ (supports_brightness | bool) and (supports_ct | bool) }}"
+                      sequence:
+                        - action: light.turn_on
+                          continue_on_error: true
+                          target:
+                            entity_id: "{{ current_light }}"
+                          data:
+                            transition: 1
+                            brightness_pct: "{{ effective_brightness | int(0) }}"
+                            color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                    - conditions:
+                        - "{{ supports_brightness | bool }}"
+                      sequence:
+                        - action: light.turn_on
+                          continue_on_error: true
+                          target:
+                            entity_id: "{{ current_light }}"
+                          data:
+                            transition: 1
+                            brightness_pct: "{{ effective_brightness | int(0) }}"
+                    - conditions:
+                        - "{{ (supports_ct | bool) and (force_ct_mode_switch | bool) and (prefers_mired_ct | bool) }}"
+                      sequence:
+                        - action: light.turn_on
+                          continue_on_error: true
+                          target:
+                            entity_id: "{{ current_light }}"
+                          data:
+                            transition: 0
+                            color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                    - conditions:
+                        - "{{ (supports_ct | bool) and (force_ct_mode_switch | bool) }}"
+                      sequence:
+                        - action: light.turn_on
+                          continue_on_error: true
+                          target:
+                            entity_id: "{{ current_light }}"
+                          data:
+                            transition: 0
+                            color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                    - conditions:
+                        - "{{ (supports_ct | bool) and (prefers_mired_ct | bool) }}"
+                      sequence:
+                        - action: light.turn_on
+                          continue_on_error: true
+                          target:
+                            entity_id: "{{ current_light }}"
+                          data:
+                            transition: 1
+                            color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                    - conditions:
+                        - "{{ supports_ct | bool }}"
+                      sequence:
+                        - action: light.turn_on
+                          continue_on_error: true
+                          target:
+                            entity_id: "{{ current_light }}"
+                          data:
+                            transition: 1
+                            color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                  default:
+                    - action: light.turn_on
+                      continue_on_error: true
+                      target:
+                        entity_id: "{{ current_light }}"
+
+      - conditions:
+          - "{{ enable_adaptive | bool }}"
+          - condition: trigger
+            id:
+              - tick
+              - sun_event
+              - auto_mode_enabled
+              - night_mode_changed
+              - night_lux_changed
+              - automations_reload_service
+          - >
+            {% if trigger.id == 'auto_mode_enabled' %}
+              {{ auto_mode_input_entity not in ['', none]
+                 and trigger.event is defined
+                 and trigger.event.data is defined
+                 and trigger.event.data.new_state is not none
+                 and trigger.event.data.new_state.state == 'on'
+                 and (trigger.event.data.old_state is none or trigger.event.data.old_state.state != 'on') }}
+            {% elif trigger.id == 'night_mode_changed' %}
+              {{ night_mode_entity_id not in ['', none]
+                 and trigger.event is defined
+                 and trigger.event.data is defined
+                 and trigger.event.data.new_state is not none
+                 and (trigger.event.data.old_state is none
+                    or trigger.event.data.old_state.state != trigger.event.data.new_state.state) }}
+            {% elif trigger.id == 'automations_reload_service' %}
+              {% set service_data = trigger.event.data.service_data
+                 if trigger.event is defined
+                 and trigger.event.data is defined
+                 and trigger.event.data.service_data is defined
+                 else {} %}
+              {% set reload_id = service_data.id | default(none) %}
+              {% set reload_entity = service_data.entity_id | default(none) %}
+              {% set current_id = this.attributes.id | default(none) %}
+              {{ reload_id == current_id
+                 or reload_entity == this.entity_id
+                 or (reload_entity is sequence
+                    and reload_entity is not string
+                    and this.entity_id in reload_entity) }}
+            {% else %}
+              true
+            {% endif %}
+          - >
+            {{ auto_mode_input_entity in ['', none]
+               or is_state(auto_mode_input_entity, 'on') }}
+        sequence:
+          - variables:
+              on_lights: >
+                {{ expand(expanded_light_entities)
+                   | selectattr('state', 'eq', 'on')
+                   | map(attribute='entity_id')
+                   | list }}
+              color_mode_lights: >
+                {{ expand(expanded_light_entities)
+                   | selectattr('state', 'eq', 'on')
+                   | rejectattr('attributes.color_mode', 'in', [none, 'unknown', 'unavailable', 'color_temp', 'white', 'brightness', 'onoff'])
+                   | map(attribute='entity_id')
+                   | list }}
+          - condition: "{{ on_lights | count > 0 }}"
+          - if:
+              - "{{ trigger.id == 'tick' }}"
+              - "{{ disable_on_color | bool }}"
+              - "{{ color_mode_lights | count > 0 }}"
+            then:
+              - action: input_boolean.turn_off
+                target:
+                  entity_id: "{{ auto_mode_input_entity }}"
+              - stop: "Disabled control entity on tick because a managed light is in color mode"
+          - variables:
+              now_ts: "{{ as_timestamp(now()) }}"
+              next_rising_ts: "{{ as_timestamp(state_attr('sun.sun', 'next_rising')) }}"
+              next_setting_ts: "{{ as_timestamp(state_attr('sun.sun', 'next_setting')) }}"
+              day_offset_s: 2700
+              sunrise_ts: >
+                {% set nr = next_rising_ts | float(0) %}
+                {% set ns = next_setting_ts | float(0) %}
+                {{ (nr - (86400 if nr > ns else 0)) - day_offset_s }}
+              sunset_ts: "{{ (next_setting_ts | float(0)) + day_offset_s }}"
+              previous_sunrise_ts: "{{ (sunrise_ts | float(0)) - 86400 }}"
+              previous_sunset_ts: "{{ (sunset_ts | float(0)) - 86400 }}"
+              weather_condition_state: >
+                {% if weather_entity_id not in ['', none] %}
+                  {{ states(weather_entity_id) | lower }}
+                {% else %}
+                  {{ '' }}
+                {% endif %}
+              weather_factor: >
+                {% set c = weather_condition_state | lower %}
+                {% if c in ['', 'unknown', 'unavailable', 'none'] %}
+                  0
+                {% elif c in ['sunny', 'clear-night'] %}
+                  0.0
+                {% elif c == 'partlycloudy' %}
+                  0.35
+                {% elif c == 'windy' %}
+                  0.45
+                {% elif c in ['windy-variant', 'cloudy'] %}
+                  0.55
+                {% elif c == 'snowy' %}
+                  0.6
+                {% elif c in ['snowy-rainy', 'hail'] %}
+                  0.65
+                {% elif c == 'fog' %}
+                  0.75
+                {% elif c == 'rainy' %}
+                  0.8
+                {% elif c == 'pouring' %}
+                  0.85
+                {% elif c in ['lightning', 'lightning-rainy'] %}
+                  0.9
+                {% elif c == 'exceptional' %}
+                  0.95
+                {% else %}
+                  0.0
+                {% endif %}
+              effective_brightness_curve_gamma: >
+                {% set base = 1.2 %}
+                {% set w = weather_factor | float(0) %}
+                {{ [0.8, [base + (w * 0.25), 2.2] | min] | max }}
+              daylight_progress: >
+                {% set t = now_ts | float(0) %}
+                {% set sr0 = sunrise_ts | float(0) %}
+                {% set ss0 = sunset_ts | float(0) %}
+                {% set sr_prev = previous_sunrise_ts | float(0) %}
+                {% set ss_prev = previous_sunset_ts | float(0) %}
+                {% if t >= sr0 and t < ss0 %}
+                  {% set d = (t - sr0) / (ss0 - sr0) %}
+                  {{ [0, [d, 1] | min] | max }}
+                {% elif t >= sr_prev and t < ss_prev %}
+                  {% set d = (t - sr_prev) / (ss_prev - sr_prev) %}
+                  {{ [0, [d, 1] | min] | max }}
+                {% else %}
+                  {{ none }}
+                {% endif %}
+              sun_position: >
+                {% set t = now_ts | float(0) %}
+                {% set sr0 = sunrise_ts | float(0) %}
+                {% set ss0 = sunset_ts | float(0) %}
+                {% set sr_prev = previous_sunrise_ts | float(0) %}
+                {% set ss_prev = previous_sunset_ts | float(0) %}
+                {% if t >= sr0 and t < ss0 %}
+                  {% set d = (t - sr0) / (ss0 - sr0) %}
+                  {% set d = [0, [d, 1] | min] | max %}
+                  {{ (1 - ((2 * d - 1) ** 2)) | float(0) }}
+                {% elif t >= sr_prev and t < ss_prev %}
+                  {% set d = (t - sr_prev) / (ss_prev - sr_prev) %}
+                  {% set d = [0, [d, 1] | min] | max %}
+                  {{ (1 - ((2 * d - 1) ** 2)) | float(0) }}
+                {% elif t < sr0 %}
+                  {% set n = (t - ss_prev) / (sr0 - ss_prev) %}
+                  {% set n = [0, [n, 1] | min] | max %}
+                  {{ (-(1 - ((2 * n - 1) ** 2))) | float(0) }}
+                {% else %}
+                  {% set n = (t - ss0) / (sr0 + 86400 - ss0) %}
+                  {% set n = [0, [n, 1] | min] | max %}
+                  {{ (-(1 - ((2 * n - 1) ** 2))) | float(0) }}
+                {% endif %}
+              adaptive_curve_factor: >
+                {% set p = sun_position | float(0) %}
+                {% if p > 0 %}
+                  {% set s0 = p * p * p * ((p * ((6 * p) - 15)) + 10) %}
+                  {% set single = (expanded_light_entities | count) == 1 %}
+                  {% set base_curve = s0 ** (effective_brightness_curve_gamma | float(1.2)) %}
+                  {% if single and daylight_progress not in [none, 'none', ''] %}
+                    {% set day_ratio = daylight_progress | float(0) %}
+                    {% if day_ratio < 0.5 %}
+                      {{ base_curve ** 0.78 }}
+                    {% else %}
+                      {{ base_curve ** 0.62 }}
+                    {% endif %}
+                  {% else %}
+                    {{ base_curve }}
+                  {% endif %}
+                {% else %}
+                  0
+                {% endif %}
+              weather_kelvin_offset: "{{ ((0.5 - (weather_factor | float(0))) * 900) }}"
+              target_brightness: >
+                {% set b_min = [b_night | float(1), b_day | float(100)] | min %}
+                {% set b_max = [b_night | float(1), b_day | float(100)] | max %}
+                {{ (b_min + (b_max - b_min) * (adaptive_curve_factor | float(0))) | round(0) | int }}
+              target_kelvin: >
+                {% set k_min = [k_night | float(2200), k_day | float(5000)] | min %}
+                {% set k_max = [k_night | float(2200), k_day | float(5000)] | max %}
+                {% set base = (k_min + (k_max - k_min) * (adaptive_curve_factor | float(0))) %}
+                {% set adjusted = base + (weather_kelvin_offset | float(0)) %}
+                {{ [k_min, [adjusted, k_max] | min] | max | round(0) | int }}
+              effective_brightness: >
+                {{ nm_brightness | int(20) if (night_adaptive_active | bool) else target_brightness | int(0) }}
+              effective_kelvin: >
+                {{ nm_kelvin | int(2200) if (night_adaptive_active | bool) else target_kelvin | int(0) }}
+          - if:
+              - "{{ trigger.id == 'tick' }}"
+            then:
+              - repeat:
+                  for_each: "{{ on_lights }}"
+                  sequence:
+                    - variables:
+                        current_light: "{{ repeat.item }}"
+                    - variables:
+                        modes: "{{ state_attr(current_light, 'supported_color_modes') or [] }}"
+                        modes_count: "{{ modes | count }}"
+                        min_k: "{{ state_attr(current_light, 'min_color_temp_kelvin') | float(0) }}"
+                        max_k: "{{ state_attr(current_light, 'max_color_temp_kelvin') | float(0) }}"
+                        has_brightness_attr: "{{ state_attr(current_light, 'brightness') is not none }}"
+                        has_ct_kelvin_attr: "{{ state_attr(current_light, 'color_temp_kelvin') is not none }}"
+                        has_ct_attr: "{{ state_attr(current_light, 'color_temp') is not none }}"
+                        current_color_mode: "{{ state_attr(current_light, 'color_mode') }}"
+                        onoff_only: "{{ (modes_count == 1) and (modes[0] == 'onoff') }}"
+                        supports_ct: >
+                          {{ 'color_temp' in modes
+                             or (min_k > 0 and max_k > 0)
+                             or has_ct_kelvin_attr
+                             or has_ct_attr }}
+                        supports_brightness: >
+                          {{ has_brightness_attr
+                             or (modes_count == 0)
+                             or not onoff_only }}
+                        prefers_mired_ct: >
+                          {{ (has_ct_attr or ('color_temp' in modes))
+                             and not has_ct_kelvin_attr }}
+                        force_ct_mode_switch: >
+                          {{ current_color_mode in ['xy', 'hs', 'rgb', 'rgbw', 'rgbww'] }}
+                        clamped_kelvin: >
+                          {% if min_k > 0 and max_k > 0 %}
+                            {{ [min_k, [effective_kelvin | float(0), max_k] | min] | max | round(0) | int }}
+                          {% else %}
+                            {{ effective_kelvin | int(0) }}
+                          {% endif %}
+                        clamped_mired: >
+                          {{ (1000000 / [clamped_kelvin | float(1), 1] | max) | round(0) | int }}
+                        tick_updates_brightness: "{{ ((now_ts | int(0) // 300) % 2 == 0) }}"
+                        recently_turned_on: >
+                          {% set last_changed_ts = as_timestamp(states[current_light].last_changed) | float(0) %}
+                          {{ is_state(current_light, 'on') and ((now_ts | float(0)) - last_changed_ts) < 20 }}
+                        current_brightness_pct: >
+                          {% set b = state_attr(current_light, 'brightness') %}
+                          {% if b is not none %}
+                            {{ [1, [((b | float(0)) / 2.55) | round(0) | int, 100] | min] | max }}
+                          {% else %}
+                            {{ effective_brightness | int(0) }}
+                          {% endif %}
+                    - choose:
+                        - conditions:
+                            - >
+                              {{ trigger.id == 'tick'
+                                 and (supports_brightness | bool)
+                                 and (supports_ct | bool)
+                                 and (force_ct_mode_switch | bool)
+                                 and (prefers_mired_ct | bool)
+                                 and (recently_turned_on | bool) }}
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 0
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 15
+                                brightness_pct: "{{ effective_brightness | int(0) }}"
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                        - conditions:
+                            - >
+                              {{ trigger.id == 'tick'
+                                 and (supports_brightness | bool)
+                                 and (supports_ct | bool)
+                                 and (force_ct_mode_switch | bool)
+                                 and (recently_turned_on | bool) }}
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 0
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 15
+                                brightness_pct: "{{ effective_brightness | int(0) }}"
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                        - conditions:
+                            - >
+                              {{ trigger.id == 'tick'
+                                 and (supports_brightness | bool)
+                                 and (supports_ct | bool)
+                                 and (prefers_mired_ct | bool)
+                                 and (recently_turned_on | bool) }}
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 15
+                                brightness_pct: "{{ effective_brightness | int(0) }}"
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                        - conditions:
+                            - >
+                              {{ trigger.id == 'tick'
+                                 and (supports_brightness | bool)
+                                 and (supports_ct | bool)
+                                 and not (recently_turned_on | bool)
+                                 and (tick_updates_brightness | bool) }}
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 15
+                                brightness_pct: "{{ effective_brightness | int(0) }}"
+                        - conditions:
+                            - >
+                              {{ trigger.id == 'tick'
+                                 and (supports_brightness | bool)
+                                 and (supports_ct | bool)
+                                 and not (recently_turned_on | bool)
+                                 and (force_ct_mode_switch | bool)
+                                 and (prefers_mired_ct | bool)
+                                 and not (tick_updates_brightness | bool) }}
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 0
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 15
+                                brightness_pct: "{{ effective_brightness | int(0) if night_adaptive_active else current_brightness_pct | int(0) }}"
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                        - conditions:
+                            - >
+                              {{ trigger.id == 'tick'
+                                 and (supports_brightness | bool)
+                                 and (supports_ct | bool)
+                                 and not (recently_turned_on | bool)
+                                 and (force_ct_mode_switch | bool)
+                                 and not (tick_updates_brightness | bool) }}
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 0
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 15
+                                brightness_pct: "{{ effective_brightness | int(0) if night_adaptive_active else current_brightness_pct | int(0) }}"
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                        - conditions:
+                            - >
+                              {{ trigger.id == 'tick'
+                                 and (supports_brightness | bool)
+                                 and (supports_ct | bool)
+                                 and not (recently_turned_on | bool)
+                                 and (prefers_mired_ct | bool)
+                                 and not (tick_updates_brightness | bool) }}
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 15
+                                brightness_pct: "{{ effective_brightness | int(0) if night_adaptive_active else current_brightness_pct | int(0) }}"
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                        - conditions:
+                            - >
+                              {{ trigger.id == 'tick'
+                                 and (supports_brightness | bool)
+                                 and (supports_ct | bool)
+                                 and not (recently_turned_on | bool)
+                                 and not (tick_updates_brightness | bool) }}
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 15
+                                brightness_pct: "{{ effective_brightness | int(0) if night_adaptive_active else current_brightness_pct | int(0) }}"
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+            else:
+              - variables:
+                  target_lights: "{{ on_lights }}"
+              - repeat:
+                  for_each: "{{ target_lights }}"
+                  sequence:
+                    - variables:
+                        current_light: "{{ repeat.item }}"
+                    - variables:
+                        modes: "{{ state_attr(current_light, 'supported_color_modes') or [] }}"
+                        modes_count: "{{ modes | count }}"
+                        min_k: "{{ state_attr(current_light, 'min_color_temp_kelvin') | float(0) }}"
+                        max_k: "{{ state_attr(current_light, 'max_color_temp_kelvin') | float(0) }}"
+                        has_brightness_attr: "{{ state_attr(current_light, 'brightness') is not none }}"
+                        has_ct_kelvin_attr: "{{ state_attr(current_light, 'color_temp_kelvin') is not none }}"
+                        has_ct_attr: "{{ state_attr(current_light, 'color_temp') is not none }}"
+                        current_color_mode: "{{ state_attr(current_light, 'color_mode') }}"
+                        onoff_only: "{{ (modes_count == 1) and (modes[0] == 'onoff') }}"
+                        supports_ct: >
+                          {{ 'color_temp' in modes
+                             or (min_k > 0 and max_k > 0)
+                             or has_ct_kelvin_attr
+                             or has_ct_attr }}
+                        supports_brightness: >
+                          {{ has_brightness_attr
+                             or (modes_count == 0)
+                             or not onoff_only }}
+                        prefers_mired_ct: >
+                          {{ (has_ct_attr or ('color_temp' in modes))
+                             and not has_ct_kelvin_attr }}
+                        force_ct_mode_switch: >
+                          {{ current_color_mode in ['xy', 'hs', 'rgb', 'rgbw', 'rgbww'] }}
+                        clamped_kelvin: >
+                          {% if min_k > 0 and max_k > 0 %}
+                            {{ [min_k, [effective_kelvin | float(0), max_k] | min] | max | round(0) | int }}
+                          {% else %}
+                            {{ effective_kelvin | int(0) }}
+                          {% endif %}
+                        clamped_mired: >
+                          {{ (1000000 / [clamped_kelvin | float(1), 1] | max) | round(0) | int }}
+                    - choose:
+                        - conditions:
+                            - "{{ (supports_brightness | bool) and (supports_ct | bool) and (force_ct_mode_switch | bool) and (prefers_mired_ct | bool) }}"
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 0
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 1
+                                brightness_pct: "{{ effective_brightness | int(0) }}"
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                        - conditions:
+                            - "{{ (supports_brightness | bool) and (supports_ct | bool) and (force_ct_mode_switch | bool) }}"
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 0
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 1
+                                brightness_pct: "{{ effective_brightness | int(0) }}"
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                        - conditions:
+                            - "{{ (supports_brightness | bool) and (supports_ct | bool) and (prefers_mired_ct | bool) }}"
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 1
+                                brightness_pct: "{{ effective_brightness | int(0) }}"
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                        - conditions:
+                            - "{{ (supports_brightness | bool) and (supports_ct | bool) }}"
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 1
+                                brightness_pct: "{{ effective_brightness | int(0) }}"
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                        - conditions:
+                            - "{{ supports_brightness | bool }}"
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 1
+                                brightness_pct: "{{ effective_brightness | int(0) }}"
+                        - conditions:
+                            - "{{ (supports_ct | bool) and (force_ct_mode_switch | bool) and (prefers_mired_ct | bool) }}"
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 0
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                        - conditions:
+                            - "{{ (supports_ct | bool) and (force_ct_mode_switch | bool) }}"
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 0
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                        - conditions:
+                            - "{{ (supports_ct | bool) and (prefers_mired_ct | bool) }}"
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 1
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                        - conditions:
+                            - "{{ supports_ct | bool }}"
+                          sequence:
+                            - action: light.turn_on
+                              continue_on_error: true
+                              target:
+                                entity_id: "{{ current_light }}"
+                              data:
+                                transition: 1
+                                color_temp_kelvin: "{{ clamped_kelvin | int(0) }}"
+                      default:
+                        - action: light.turn_on
+                          continue_on_error: true
+                          target:
+                            entity_id: "{{ current_light }}"
