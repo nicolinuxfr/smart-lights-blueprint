@@ -79,6 +79,8 @@ The following options are fairly self-explanatory: define the minimum and maximu
 
 The automation automatically calculates two curves, one for brightness and one for temperature. As long as managed lights are on, the new values are sent every 5 minutes, with a transition so they evolve smoothly.
 
+When adaptive lighting turns several lights on or reapplies settings after an adaptive mode change, the automation splits the per-light commands across four bounded parallel branches. A slow light or integration can still delay lights assigned to the same branch, but it no longer blocks the whole group.
+
 #### Specific settings at night
 
 Check the box to apply different settings at night. By default, the minimum values selected above are used. If you prefer other values, enable the option and choose the temperature and brightness below.

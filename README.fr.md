@@ -79,6 +79,8 @@ Les options suivantes sont assez explicites : définissez les valeurs minimales
 
 L'automatisation calcule automatiquement deux courbes, une pour la luminosité et une pour la température. Tant que des lumières contrôlées sont allumées, les nouvelles valeurs sont transmises toutes les 5 minutes, avec une transition pour les faire évoluer en douceur.
 
+Quand l'éclairage adaptatif allume plusieurs lumières ou réapplique les réglages après un changement de mode adaptatif, l'automatisation répartit les commandes par lampe dans quatre branches parallèles bornées. Une lampe ou une intégration lente peut encore retarder les lampes affectées à la même branche, mais elle ne bloque plus tout le groupe.
+
 #### Réglages spécifiques la nuit
 
 Cochez la case pour appliquer des réglages différents la nuit. Par défaut, les valeurs minimales sélectionnées précédemment sont utilisées. Si vous préférez d'autres valeurs, cochez l'option et choisissez la température et la luminosité en-dessous.

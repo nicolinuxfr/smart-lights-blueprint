@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026.7
+
+- Speed up the automation when slow devices (e.g. Bluetooth one) are controlled through the automation.
+
 ## 2026.4.5
 
 - Better handling of heteregeneous groups of lights.

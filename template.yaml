@@ -73,8 +73,11 @@ action:
               - variables:
                   [[include:adaptive_variables.yaml]]
               - variables:
+                  adaptive_parallel_turn_on: true
                   target_lights: "{{ expanded_light_entities }}"
               [[include:adaptive_light_turn_on.yaml]]
+              - variables:
+                  adaptive_parallel_turn_on: false
             else:
               - action: light.turn_on
                 target: !input lights
@@ -344,8 +347,11 @@ action:
                       - variables:
                           [[include:adaptive_variables.yaml]]
                       - variables:
+                          adaptive_parallel_turn_on: true
                           target_lights: "{{ expanded_light_entities }}"
                       [[include:adaptive_light_turn_on.yaml]]
+                      - variables:
+                          adaptive_parallel_turn_on: false
                     else:
                       - action: light.turn_on
                         target: !input lights
@@ -410,8 +416,11 @@ action:
           - variables:
               [[include:adaptive_variables.yaml]]
           - variables:
+              adaptive_parallel_turn_on: true
               target_lights: "{{ on_lights }}"
           [[include:adaptive_light_turn_on.yaml]]
+          - variables:
+              adaptive_parallel_turn_on: false
 
       - conditions:
           - "{{ enable_adaptive | bool }}"
@@ -507,5 +516,8 @@ action:
                     [[include:adaptive_tick_turn_on.yaml]]
             else:
               - variables:
+                  adaptive_parallel_turn_on: true
                   target_lights: "{{ on_lights }}"
               [[include:adaptive_light_turn_on.yaml]]
+              - variables:
+                  adaptive_parallel_turn_on: false
